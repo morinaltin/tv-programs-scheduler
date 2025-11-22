@@ -1,0 +1,142 @@
+{
+    "scheduled_programs": [
+        {
+            "program_id": "KTV_1",
+            "channel_id": 2,
+            "start": 420,
+            "end": 480
+        },
+        {
+            "program_id": "MusicKosova_2",
+            "channel_id": 10,
+            "start": 480,
+            "end": 510
+        },
+        {
+            "program_id": "MusicKosova_3",
+            "channel_id": 10,
+            "start": 510,
+            "end": 540
+        },
+        {
+            "program_id": "BizTV_2",
+            "channel_id": 11,
+            "start": 540,
+            "end": 570
+        },
+        {
+            "program_id": "KlanKosova_4",
+            "channel_id": 3,
+            "start": 570,
+            "end": 600
+        },
+        {
+            "program_id": "SportKosova_4",
+            "channel_id": 9,
+            "start": 630,
+            "end": 660
+        },
+        {
+            "program_id": "TVPrishtina_4",
+            "channel_id": 12,
+            "start": 660,
+            "end": 720
+        },
+        {
+            "program_id": "KlanKosova_6",
+            "channel_id": 3,
+            "start": 720,
+            "end": 750
+        },
+        {
+            "program_id": "KlanKosova_7",
+            "channel_id": 3,
+            "start": 750,
+            "end": 840
+        },
+        {
+            "program_id": "RTVDukagjini_8",
+            "channel_id": 6,
+            "start": 840,
+            "end": 870
+        },
+        {
+            "program_id": "KTV_8",
+            "channel_id": 2,
+            "start": 870,
+            "end": 900
+        },
+        {
+            "program_id": "Rubikon_6",
+            "channel_id": 7,
+            "start": 900,
+            "end": 930
+        },
+        {
+            "program_id": "ATV_8",
+            "channel_id": 4,
+            "start": 930,
+            "end": 960
+        },
+        {
+            "program_id": "ABCNews_7",
+            "channel_id": 8,
+            "start": 960,
+            "end": 1020
+        },
+        {
+            "program_id": "Rubikon_9",
+            "channel_id": 7,
+            "start": 1020,
+            "end": 1050
+        },
+        {
+            "program_id": "MusicKosova_10",
+            "channel_id": 10,
+            "start": 1050,
+            "end": 1080
+        },
+        {
+            "program_id": "MusicKosova_11",
+            "channel_id": 10,
+            "start": 1080,
+            "end": 1140
+        },
+        {
+            "program_id": "RTK1_10",
+            "channel_id": 0,
+            "start": 1140,
+            "end": 1170
+        },
+        {
+            "program_id": "RTK1_11",
+            "channel_id": 0,
+            "start": 1170,
+            "end": 1200
+        },
+        {
+            "program_id": "RTVDukagjini_12",
+            "channel_id": 6,
+            "start": 1200,
+            "end": 1260
+        },
+        {
+            "program_id": "KlanKosova_14",
+            "channel_id": 3,
+            "start": 1290,
+            "end": 1320
+        },
+        {
+            "program_id": "RTV21_13",
+            "channel_id": 5,
+            "start": 1320,
+            "end": 1350
+        },
+        {
+            "program_id": "RTV21_14",
+            "channel_id": 5,
+            "start": 1350,
+            "end": 1380
+        }
+    ]
+}

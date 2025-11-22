@@ -1,0 +1,28 @@
+{
+    "scheduled_programs": [
+        {
+            "program_id": "n1",
+            "channel_id": 0,
+            "start": 540,
+            "end": 600
+        },
+        {
+            "program_id": "n2",
+            "channel_id": 0,
+            "start": 600,
+            "end": 660
+        },
+        {
+            "program_id": "s2",
+            "channel_id": 1,
+            "start": 840,
+            "end": 960
+        },
+        {
+            "program_id": "m1",
+            "channel_id": 2,
+            "start": 960,
+            "end": 1020
+        }
+    ]
+}
