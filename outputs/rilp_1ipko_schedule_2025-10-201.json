@@ -1,10 +1,16 @@
 {
     "scheduled_programs": [
         {
-            "program_id": "stinet_3",
-            "channel_id": 69,
-            "start": 11,
-            "end": 45
+            "program_id": "tv-arta_4",
+            "channel_id": 135,
+            "start": 0,
+            "end": 30
+        },
+        {
+            "program_id": "euronews-albania_4",
+            "channel_id": 145,
+            "start": 30,
+            "end": 60
         },
         {
             "program_id": "klan-kosova_3",
@@ -25,8 +31,8 @@
             "end": 150
         },
         {
-            "program_id": "trt-world_12",
-            "channel_id": 102,
+            "program_id": "rtv-21_7",
+            "channel_id": 4,
             "start": 150,
             "end": 180
         },
@@ -223,8 +229,8 @@
             "end": 1170
         },
         {
-            "program_id": "trt-spor_20",
-            "channel_id": 163,
+            "program_id": "peace-tv_35",
+            "channel_id": 151,
             "start": 1170,
             "end": 1200
         },
@@ -247,10 +253,16 @@
             "end": 1290
         },
         {
-            "program_id": "3-plus_30",
-            "channel_id": 65,
+            "program_id": "t7_1",
+            "channel_id": 6,
             "start": 1290,
-            "end": 1340
+            "end": 1320
+        },
+        {
+            "program_id": "euronews-albania_2",
+            "channel_id": 145,
+            "start": 1320,
+            "end": 1350
         },
         {
             "program_id": "tgrt-haber_3",

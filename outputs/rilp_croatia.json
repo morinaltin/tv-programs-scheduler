@@ -31,9 +31,15 @@
             "end": 510
         },
         {
-            "program_id": "CMC_4",
-            "channel_id": 10,
+            "program_id": "ArenaSport2_3",
+            "channel_id": 8,
             "start": 510,
+            "end": 540
+        },
+        {
+            "program_id": "ArenaSport2_4",
+            "channel_id": 8,
+            "start": 540,
             "end": 570
         },
         {

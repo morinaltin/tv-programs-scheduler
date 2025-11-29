@@ -1,44 +1,38 @@
 {
     "scheduled_programs": [
         {
-            "program_id": "tv-arta_3",
-            "channel_id": 135,
+            "program_id": "trt-muzik_3",
+            "channel_id": 97,
             "start": 0,
             "end": 30
         },
         {
-            "program_id": "top-news_2",
-            "channel_id": 141,
+            "program_id": "euronews-albania_4",
+            "channel_id": 145,
             "start": 30,
             "end": 60
         },
         {
-            "program_id": "tv-dukagjini_5",
-            "channel_id": 8,
+            "program_id": "klan-kosova_3",
+            "channel_id": 3,
             "start": 60,
             "end": 90
         },
         {
-            "program_id": "trt-spor_3",
-            "channel_id": 163,
+            "program_id": "novelas_5",
+            "channel_id": 68,
             "start": 90,
-            "end": 120
+            "end": 135
         },
         {
-            "program_id": "tv-arta_7",
-            "channel_id": 135,
-            "start": 120,
-            "end": 150
-        },
-        {
-            "program_id": "tv-arta_8",
-            "channel_id": 135,
-            "start": 150,
+            "program_id": "novelas_6",
+            "channel_id": 68,
+            "start": 135,
             "end": 180
         },
         {
-            "program_id": "tgrt-eu_5",
-            "channel_id": 90,
+            "program_id": "tv-arta_9",
+            "channel_id": 135,
             "start": 180,
             "end": 210
         },
@@ -49,49 +43,49 @@
             "end": 240
         },
         {
-            "program_id": "trt-muzik_8",
-            "channel_id": 97,
+            "program_id": "prince-kids_15",
+            "channel_id": 27,
             "start": 240,
-            "end": 270
+            "end": 279
         },
         {
-            "program_id": "trt-muzik_9",
-            "channel_id": 97,
-            "start": 270,
-            "end": 330
+            "program_id": "trt-belgesel_14",
+            "channel_id": 99,
+            "start": 290,
+            "end": 325
         },
         {
-            "program_id": "trt-world_16",
-            "channel_id": 102,
-            "start": 330,
-            "end": 360
+            "program_id": "film-autor_5",
+            "channel_id": 48,
+            "start": 325,
+            "end": 355
         },
         {
-            "program_id": "trt-world_17",
+            "program_id": "trt-world_19",
             "channel_id": 102,
             "start": 360,
             "end": 390
         },
         {
-            "program_id": "tv-arta_14",
-            "channel_id": 135,
+            "program_id": "peace-tv_14",
+            "channel_id": 151,
             "start": 390,
             "end": 420
         },
         {
-            "program_id": "teve-1_11",
-            "channel_id": 10,
+            "program_id": "trt-turk_16",
+            "channel_id": 100,
             "start": 420,
             "end": 450
         },
         {
-            "program_id": "beat-tv_4",
-            "channel_id": 112,
+            "program_id": "trt-turk_17",
+            "channel_id": 100,
             "start": 450,
             "end": 480
         },
         {
-            "program_id": "rtsh-1_9",
+            "program_id": "rtsh-1_11",
             "channel_id": 17,
             "start": 480,
             "end": 510
@@ -103,25 +97,25 @@
             "end": 540
         },
         {
-            "program_id": "tv-arta_19",
-            "channel_id": 135,
+            "program_id": "alsat-m_11",
+            "channel_id": 15,
             "start": 540,
             "end": 570
         },
         {
-            "program_id": "trt-world_23",
-            "channel_id": 102,
+            "program_id": "alsat-m_12",
+            "channel_id": 15,
             "start": 570,
             "end": 600
         },
         {
-            "program_id": "klan_11",
-            "channel_id": 16,
+            "program_id": "trt-world_26",
+            "channel_id": 102,
             "start": 600,
             "end": 630
         },
         {
-            "program_id": "trt-world_25",
+            "program_id": "trt-world_27",
             "channel_id": 102,
             "start": 630,
             "end": 660
@@ -133,147 +127,147 @@
             "end": 690
         },
         {
-            "program_id": "trt-world_27",
-            "channel_id": 102,
+            "program_id": "peace-tv_23",
+            "channel_id": 151,
             "start": 690,
             "end": 720
         },
         {
-            "program_id": "alsat-m_14",
+            "program_id": "alsat-m_16",
             "channel_id": 15,
             "start": 720,
             "end": 750
         },
         {
-            "program_id": "peace-tv_25",
-            "channel_id": 151,
+            "program_id": "rtv-21_32",
+            "channel_id": 4,
             "start": 750,
             "end": 780
         },
         {
-            "program_id": "peace-tv_26",
-            "channel_id": 151,
+            "program_id": "trt-world_31",
+            "channel_id": 102,
             "start": 780,
             "end": 810
         },
         {
-            "program_id": "rtsh-24_18",
-            "channel_id": 19,
+            "program_id": "syri-tv_12",
+            "channel_id": 140,
             "start": 810,
             "end": 840
         },
         {
-            "program_id": "trt-world_31",
-            "channel_id": 102,
+            "program_id": "beat-tv_11",
+            "channel_id": 112,
             "start": 840,
             "end": 870
         },
         {
-            "program_id": "trt-world_32",
+            "program_id": "trt-world_34",
             "channel_id": 102,
             "start": 870,
             "end": 900
         },
         {
-            "program_id": "beat-tv_13",
-            "channel_id": 112,
+            "program_id": "trt-world_35",
+            "channel_id": 102,
             "start": 900,
             "end": 930
         },
         {
-            "program_id": "peace-tv_29",
-            "channel_id": 151,
+            "program_id": "sport-1_11",
+            "channel_id": 152,
             "start": 930,
             "end": 960
         },
         {
-            "program_id": "dream-turk_10",
-            "channel_id": 95,
+            "program_id": "rtk-2_36",
+            "channel_id": 2,
             "start": 960,
             "end": 990
         },
         {
-            "program_id": "dream-turk_11",
-            "channel_id": 95,
+            "program_id": "doku-1_22",
+            "channel_id": 73,
             "start": 990,
             "end": 1020
         },
         {
-            "program_id": "peace-tv_31",
-            "channel_id": 151,
+            "program_id": "klan-plus_14",
+            "channel_id": 143,
             "start": 1020,
             "end": 1050
         },
         {
-            "program_id": "star-life_26",
+            "program_id": "star-life_30",
             "channel_id": 56,
             "start": 1050,
             "end": 1080
         },
         {
-            "program_id": "klan-kosova_40",
+            "program_id": "klan-kosova_39",
             "channel_id": 3,
             "start": 1080,
             "end": 1110
         },
         {
-            "program_id": "star_30",
-            "channel_id": 55,
+            "program_id": "smile_27",
+            "channel_id": 35,
             "start": 1110,
             "end": 1140
         },
         {
-            "program_id": "smile_31",
-            "channel_id": 35,
+            "program_id": "peace-tv_34",
+            "channel_id": 151,
             "start": 1140,
             "end": 1170
         },
         {
-            "program_id": "trt-muzik_28",
-            "channel_id": 97,
+            "program_id": "peace-tv_35",
+            "channel_id": 151,
             "start": 1170,
             "end": 1200
         },
         {
-            "program_id": "tv-arta_46",
-            "channel_id": 135,
+            "program_id": "peace-tv_36",
+            "channel_id": 151,
             "start": 1200,
             "end": 1230
         },
         {
-            "program_id": "peace-tv_37",
-            "channel_id": 151,
+            "program_id": "stinet_38",
+            "channel_id": 69,
             "start": 1230,
             "end": 1260
         },
         {
-            "program_id": "power-turk_18",
-            "channel_id": 96,
+            "program_id": "stinet_39",
+            "channel_id": 69,
             "start": 1260,
             "end": 1290
         },
         {
-            "program_id": "trt-world_45",
+            "program_id": "trt-world_1",
             "channel_id": 102,
             "start": 1290,
             "end": 1320
         },
         {
-            "program_id": "tgrt-belgesel_2",
-            "channel_id": 98,
-            "start": 1321,
-            "end": 1354
+            "program_id": "euronews-albania_2",
+            "channel_id": 145,
+            "start": 1320,
+            "end": 1350
         },
         {
-            "program_id": "top-channel_3",
-            "channel_id": 13,
-            "start": 1355,
-            "end": 1400
+            "program_id": "tgrt-haber_3",
+            "channel_id": 109,
+            "start": 1350,
+            "end": 1380
         },
         {
-            "program_id": "trt-turk_3",
-            "channel_id": 100,
-            "start": 1405,
+            "program_id": "star-life_3",
+            "channel_id": 56,
+            "start": 1380,
             "end": 1435
         }
     ]

@@ -157,9 +157,15 @@
             "end": 780
         },
         {
-            "program_id": "zico-tv_24",
-            "channel_id": 116,
-            "start": 783,
+            "program_id": "rtsh-24_16",
+            "channel_id": 19,
+            "start": 780,
+            "end": 810
+        },
+        {
+            "program_id": "rtsh-24_17",
+            "channel_id": 19,
+            "start": 810,
             "end": 840
         },
         {
@@ -265,10 +271,10 @@
             "end": 1350
         },
         {
-            "program_id": "peace-tv_3",
-            "channel_id": 151,
-            "start": 1350,
-            "end": 1380
+            "program_id": "tgrt-belgesel_2",
+            "channel_id": 98,
+            "start": 1354,
+            "end": 1387
         },
         {
             "program_id": "tring-series_3",

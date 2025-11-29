@@ -237,14 +237,12 @@ Subject to:
 
 ---
 
-## RILP Formulation (Relaxed/Simplified Model)
+## RILP Formulation (Relaxed Model)
 
 ### Additional Notation
 
-- **C** = Set of maximal cliques in the interval overlap graph
-- **C_k** = k-th maximal clique (set of mutually overlapping programs)
-- **G_g** = Set of programs with genre g, sorted by start time
-- **W_{g,m}** = m-th window of R+1 consecutive programs of genre g
+- **T** = Set of all time points (minutes) where at least one program is active
+- **ACTIVE(t)** = Set of programs that cover time point t (i.e., {i : start_i ≤ t < end_i})
 
 ### Decision Variables
 
@@ -263,41 +261,24 @@ Maximize:  Z = Σ (score_i + bonus_i) · x_i
               i∈P
 ```
 
-*Note: Channel switch penalties are NOT included in the ILP model, only in post-processing evaluation.*
+*Note: Channel switch penalties and genre diversity constraints are completely ignored in this relaxed formulation.*
 
 ### Constraints
 
-#### 1. Clique Constraints (Replaces Pairwise Overlaps)
+#### 1. Time-Based Overlap Constraints
 
-For each maximal clique C_k ∈ C:
+For each time point t ∈ T where |ACTIVE(t)| > 1:
 
 ```
 Σ x_i ≤ 1
-i∈C_k
+i∈ACTIVE(t)
 ```
 
-*At most one program from each clique of overlapping programs can be selected.*
+*At most one program can be active (playing) at any given time point.*
 
-**Key Insight**: Instead of O(n²) pairwise constraints, we have O(|C|) clique constraints where |C| << n² for interval graphs.
+**Implementation Note**: Time points are discretized into 1-minute intervals. For each minute from opening_time to closing_time, if multiple programs cover that minute, a constraint is added.
 
----
-
-#### 2. Genre Diversity (Heuristic Sliding Window)
-
-For each genre g ∈ G, for each window W_{g,m} = {i_m, i_{m+1}, ..., i_{m+R}} of R+1 consecutive programs of genre g (sorted by start time):
-
-**Only add constraint if programs could potentially be scheduled consecutively:**
-
-Check: If end_{i_m} ≤ start_{i_{m+R}} (no overlap between first and last), AND
-       For all consecutive pairs in window: start_{i_{k+1}} - end_{i_k} < D (gaps too small for other programs)
-
-Then:
-```
-Σ x_i ≤ R
-i∈W_{g,m}
-```
-
-*Among R+1 programs of the same genre that could be consecutive, select at most R.*
+**Key Insight**: Instead of O(n²) pairwise overlap constraints, we have at most O(T) constraints where T is the number of minutes in the viewing window (e.g., 1440 for a full day).
 
 ---
 
@@ -309,14 +290,13 @@ Maximize:
         i∈P
 
 Subject to:
-    Σ x_i ≤ 1                                        ∀C_k ∈ C
-    i∈C_k
-    
-    Σ x_i ≤ R                                        ∀g ∈ G, ∀feasible windows W_{g,m}
-    i∈W_{g,m}
+    Σ x_i ≤ 1                                        ∀t ∈ T : |ACTIVE(t)| > 1
+    i∈ACTIVE(t)
     
     x_i ∈ {0,1}                                      ∀i ∈ P
 ```
+
+*This is an extremely simplified formulation that only ensures non-overlapping programs while maximizing scores.*
 
 ---
 
@@ -327,9 +307,10 @@ Subject to:
 | Aspect | ILP | RILP |
 |--------|-----|------|
 | **Variables** | O(n² + n·R) | O(n) |
-| **Overlap Constraints** | O(n²) worst case | O(\|C\|), typically O(n) |
-| **Genre Constraints** | O(n·R + n²·R) | O(n·R) sliding windows |
-| **Total Constraints** | O(n²·R) | O(n·R) |
+| **Overlap Constraints** | O(n²) worst case | O(T), where T = time window |
+| **Genre Constraints** | O(n·R + n²·R) | None (removed) |
+| **Channel Switch Penalty** | Included in objective | None (removed) |
+| **Total Constraints** | O(n²·R) | O(T) |
 
 Where:
 - n = number of programs
@@ -338,7 +319,7 @@ Where:
 
 ### Variable Counts Example
 
-For n = 500 programs, R = 2:
+For n = 500 programs, R = 2, T = 1440 minutes:
 
 **ILP:**
 - Selection: 500
@@ -346,22 +327,25 @@ For n = 500 programs, R = 2:
 - First/Last: 1,000
 - Run positions: 1,000
 - **Total: ~52,500 variables**
+- **Constraints: ~100,000+**
 
 **RILP:**
 - Selection: 500
 - **Total: 500 variables** (100× reduction!)
+- **Constraints: ~1,440** (one per minute with overlaps)
 
 ---
 
 ## Key Mathematical Insights
 
-### 1. Interval Graph Property (RILP)
+### 1. Time Discretization (RILP)
 
-The overlap graph is an **interval graph** (each program is an interval on a timeline). Interval graphs have special properties:
+Instead of modeling all pairwise overlaps, RILP uses **time discretization**:
 
-- Maximal cliques can be found in O(n log n) time
-- Perfect graph: clique cover = chromatic number
-- Enables dramatic constraint reduction
+- Divides the viewing window into 1-minute intervals
+- For each minute, tracks which programs are active
+- Adds constraint only when multiple programs overlap at that minute
+- Reduces O(n²) pairwise constraints to O(T) time-based constraints
 
 ### 2. Genre Constraint Modeling (ILP)
 
@@ -440,24 +424,22 @@ bonus_i = Σ pref.bonus
             max(start_i, pref.start) < min(end_i, pref.end) - D
 ```
 
-### Finding Cliques (RILP)
+### Building Time Map (RILP)
 
-**Sweep Line Algorithm:**
+**Time Discretization Algorithm:**
 
 ```
-1. Create events: (start_i, 'START', i) and (end_i, 'END', i)
-2. Sort events by time (ENDs before STARTs at same time)
-3. Active = ∅, Cliques = ∅
-4. For each event:
-     If START:
-       Active = Active ∪ {i}
-       If |Active| > 1: Cliques = Cliques ∪ {Active}
-     If END:
-       Active = Active \ {i}
-5. Remove non-maximal cliques
+1. Initialize time_map = {} (maps minute → list of programs)
+2. For each program i:
+     For each minute t in [start_i, end_i):
+       Add i to time_map[t]
+3. For each minute t in time_map:
+     If len(time_map[t]) > 1:
+       Add constraint: Σ x[i] ≤ 1 for i in time_map[t]
 ```
 
-Time complexity: O(n log n + m) where m = |Cliques|
+Time complexity: O(n · d) where d = average program duration in minutes
+Space complexity: O(T) where T = number of distinct occupied minutes
 
 ---
 

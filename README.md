@@ -8,8 +8,8 @@ This project implements two approaches to solve the **TV Channel Scheduling Prob
 Select programs from multiple TV channels to create a single optimal viewing schedule that:
 - Maximizes total score (viewer interest/ratings)
 - Respects time and content constraints
-- Minimizes channel switching
-- Ensures content diversity
+- Minimizes channel switching (ILP only)
+- Ensures content diversity (ILP only)
 
 ### Input Parameters
 
@@ -108,33 +108,28 @@ Arguments:
 
 ### 2. RILP (Relaxed ILP) - `rilp.py`
 
-**Lightweight scalable solution** with simplifications for large instances.
+**Highly relaxed solution** that maximizes program scores without channel switch penalties or genre diversity constraints.
 
 #### Key Simplifications
 
-1. **Clique Constraints**: Instead of O(n²) pairwise overlap constraints, uses interval graph cliques
-   - Groups overlapping programs into maximal cliques
-   - Adds constraint: "at most 1 program from each clique"
-   - Reduces constraints dramatically for large instances
+1. **No Channel Switch Penalties**: The objective function only maximizes program scores
+   - Ignores `switch_penalty` parameter entirely
+   - Programs can be selected from any channels without cost
+   - Focus is purely on maximizing base scores + time preference bonuses
 
-2. **Simplified Genre Constraint**: Uses sliding window approach
-   - For each genre, examines windows of R+1 programs
-   - Prevents all R+1 from being selected if they could be consecutive
-   - Heuristic but much faster
+2. **No Genre Constraints**: Consecutive programs of the same genre are allowed
+   - Ignores `max_consecutive_genre` parameter
+   - Any number of consecutive programs with the same genre can be scheduled
+   - Removes all genre diversity tracking logic
 
-3. **No Sequencing Variables**: Doesn't model exact program order
-   - Post-processes solution to ensure validity
-   - Sorts by start time after selection
+3. **Efficient Time-Based Constraints**: Uses discretized time buckets
+   - Maps each minute to programs covering that time
+   - Adds constraint: at most 1 program active at any given minute
+   - Ensures no overlapping programs in the schedule
 
-4. **Greedy Fallback**: If ILP fails or times out, uses greedy algorithm
-   - Sorts programs by score
-   - Greedily adds programs that don't violate constraints
-
-#### Post-Processing Steps
-
-1. **Fix Genre Violations**: Iteratively removes lowest-value programs from violating runs
-2. **Fill Gaps**: Attempts to add more programs without violating constraints
-3. **Validation**: Checks final solution for any remaining violations
+4. **No Sequencing Variables**: Doesn't model exact program order during optimization
+   - Solution is sorted by start time after selection
+   - No flow conservation or ordering constraints needed
 
 #### Usage
 
@@ -144,10 +139,10 @@ python rilp.py input.json output.json 300
 
 #### When to Use
 
-- Large instances (> 500 programs)
-- When time is limited
-- When near-optimal solution is acceptable
-- For quick prototyping and testing
+- When you want to maximize raw program scores without penalties
+- Testing upper bound of achievable score (ignoring switches and genre diversity)
+- Large instances where you need fast solutions
+- Scenarios where channel switching and genre diversity are not important
 
 ---
 
@@ -155,13 +150,14 @@ python rilp.py input.json output.json 300
 
 | Aspect | ILP | RILP |
 |--------|-----|------|
-| **Optimality** | Exact optimal (within time limit) | Near-optimal heuristic |
+| **Optimality** | Exact optimal (within time limit) | Optimal for relaxed problem |
 | **Scalability** | Struggles with > 500 programs | Handles 1000+ programs |
-| **Constraints** | O(n²) overlap constraints | O(k) clique constraints |
-| **Variables** | Many (sequencing, genre runs) | Fewer (selection only) |
-| **Genre Constraint** | Exact with run tracking | Heuristic sliding window |
-| **Runtime** | Longer, may timeout | Faster, with fallback |
-| **Solution Quality** | Guaranteed optimal* | Good but not guaranteed |
+| **Constraints** | O(n²) overlap constraints | O(T) time-based constraints |
+| **Variables** | Many (sequencing, genre runs) | Minimal (selection only) |
+| **Genre Constraint** | Exact with run tracking | None (ignored) |
+| **Channel Switches** | Penalized in objective | None (ignored) |
+| **Runtime** | Longer, may timeout | Very fast |
+| **Solution Quality** | Respects all constraints | Ignores switch/genre constraints |
 
 \* If solver completes within time limit
 
@@ -179,7 +175,6 @@ python rilp.py input.json output.json 300
   "max_consecutive_genre": 2,
   "channels_count": 172,
   "switch_penalty": 5,
-  "termination_penalty": 10,
   "time_preferences": [
     {
       "start": 0,
@@ -245,8 +240,9 @@ python rilp.py inputs/large_sample.json outputs/rilp_result.json 300
 
 ### 4. Solution Summary
 
-Both solvers print detailed summaries:
+Both solvers print summaries:
 
+**ILP Output:**
 ```
 Programs after filtering: 245
 Solving ILP (time limit: 300s)...
@@ -268,6 +264,23 @@ Schedule (34 programs):
    2. prog_042         Ch2 01:30-02:45 humoristik      score=92
    ...
 ```
+
+**RILP Output:**
+```
+Programs considered: 245
+Constraints added: 1438
+Solver Status: Optimal
+
+--- RELAXED SCHEDULE (No Penalties) ---
+[30-90] prog_001 (Score: 85)
+[90-150] prog_042 (Score: 192)
+...
+========================================
+CALCULATED RELAXED SCORE: 9850
+========================================
+```
+
+Note: RILP scores are typically higher since they ignore switch penalties and genre restrictions.
 
 ---
 
@@ -302,27 +315,29 @@ For each program i:
 
 This ensures no more than R consecutive programs of the same genre.
 
-### RILP Clique Finding (Sweep Line)
+### RILP Time-Based Overlap Constraints
 
 ```python
-active = set()
-for each event (time, type, program):
-    if type == 'start':
-        active.add(program)
-        current active set is a clique
-    else:
-        active.remove(program)
+time_map = {}
+for each program i:
+    for each minute t in [start, end):
+        time_map[t].append(i)
+
+for each minute t with multiple programs:
+    add constraint: sum(x[i] for i in time_map[t]) <= 1
 ```
 
-This efficiently finds all maximal cliques in O(n log n + m) time where m is the number of cliques.
+This ensures no two programs overlap, using O(T) constraints where T is the number of distinct minutes with overlaps.
 
 ---
 
-## Performance Tips
+### Performance Tips
 
 1. **Filter Early**: The solvers filter out invalid programs before building the ILP model
-2. **Time Limits**: Set realistic time limits; solvers often find good solutions early
-3. **Choose Wisely**: Use ILP for accuracy, RILP for speed
+2. **Time Limits**: Set realistic time limits; ILP often finds good solutions early
+3. **Choose Wisely**: 
+   - Use **ILP** when you need to respect all constraints (channel switches, genre diversity)
+   - Use **RILP** when you want maximum score without penalties/restrictions, or as an upper bound
 4. **Monitor Progress**: Both solvers print progress; interrupt if taking too long
 5. **Preprocessing**: Consider removing very low-score programs to reduce problem size
 

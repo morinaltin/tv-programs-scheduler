@@ -67,8 +67,8 @@
             "end": 810
         },
         {
-            "program_id": "Net5_7",
-            "channel_id": 7,
+            "program_id": "Canvas_7",
+            "channel_id": 10,
             "start": 810,
             "end": 840
         },
@@ -79,10 +79,10 @@
             "end": 870
         },
         {
-            "program_id": "E\u00e9n_8",
-            "channel_id": 9,
+            "program_id": "RTL5_8",
+            "channel_id": 4,
             "start": 870,
-            "end": 900
+            "end": 930
         },
         {
             "program_id": "Net5_9",

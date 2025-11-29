@@ -13,9 +13,15 @@
             "end": 60
         },
         {
-            "program_id": "episode_3",
-            "channel_id": 72,
+            "program_id": "ktv_5",
+            "channel_id": 5,
             "start": 60,
+            "end": 90
+        },
+        {
+            "program_id": "tgrt-haber_3",
+            "channel_id": 109,
+            "start": 90,
             "end": 120
         },
         {
@@ -139,8 +145,8 @@
             "end": 750
         },
         {
-            "program_id": "trt-cocuk_45",
-            "channel_id": 30,
+            "program_id": "peace-tv_25",
+            "channel_id": 151,
             "start": 750,
             "end": 780
         },
@@ -181,8 +187,8 @@
             "end": 960
         },
         {
-            "program_id": "dream-turk_9",
-            "channel_id": 95,
+            "program_id": "rtv-21_37",
+            "channel_id": 4,
             "start": 960,
             "end": 990
         },
@@ -229,8 +235,8 @@
             "end": 1200
         },
         {
-            "program_id": "trt-world_43",
-            "channel_id": 102,
+            "program_id": "rtk-1_41",
+            "channel_id": 1,
             "start": 1200,
             "end": 1230
         },

@@ -13,8 +13,8 @@
             "end": 60
         },
         {
-            "program_id": "rtv-21_5",
-            "channel_id": 4,
+            "program_id": "peace-tv_7",
+            "channel_id": 151,
             "start": 60,
             "end": 90
         },
@@ -31,8 +31,8 @@
             "end": 150
         },
         {
-            "program_id": "tv-arta_8",
-            "channel_id": 135,
+            "program_id": "trt-world_11",
+            "channel_id": 102,
             "start": 150,
             "end": 180
         },
@@ -61,8 +61,8 @@
             "end": 300
         },
         {
-            "program_id": "vizion-+-hd_8",
-            "channel_id": 12,
+            "program_id": "trt-world_16",
+            "channel_id": 102,
             "start": 300,
             "end": 330
         },
@@ -91,8 +91,8 @@
             "end": 450
         },
         {
-            "program_id": "tgrt-haber_10",
-            "channel_id": 109,
+            "program_id": "peace-tv_16",
+            "channel_id": 151,
             "start": 450,
             "end": 480
         },
@@ -109,8 +109,8 @@
             "end": 540
         },
         {
-            "program_id": "alsat-m_11",
-            "channel_id": 15,
+            "program_id": "trt-world_24",
+            "channel_id": 102,
             "start": 540,
             "end": 570
         },
@@ -139,8 +139,8 @@
             "end": 690
         },
         {
-            "program_id": "syri-tv_12",
-            "channel_id": 140,
+            "program_id": "trt-turk_32",
+            "channel_id": 100,
             "start": 690,
             "end": 720
         },
@@ -193,14 +193,14 @@
             "end": 960
         },
         {
-            "program_id": "supersport-2_11",
-            "channel_id": 166,
+            "program_id": "a2-cnn_13",
+            "channel_id": 144,
             "start": 960,
             "end": 990
         },
         {
-            "program_id": "a2-cnn_14",
-            "channel_id": 144,
+            "program_id": "trt-world_39",
+            "channel_id": 102,
             "start": 990,
             "end": 1020
         },

@@ -1,355 +1,193 @@
-"""
-TV Channel Scheduling - Lightweight Relaxed ILP
-Aggressive simplification for very large instances.
-
-Key simplifications:
-1. Use interval graph clique constraints instead of pairwise overlaps
-2. Simplified genre constraints
-3. Robust error handling
-
-Run: python solution_relaxed.py input.json output.json 300
-"""
-
 import json
 import sys
 from pulp import *
-from collections import defaultdict
-import time
+
 
 def load_input(filepath):
     with open(filepath, 'r') as f:
         return json.load(f)
 
-def solve_tv_scheduling(input_data, time_limit=300):
-    start_time = time.time()
 
+def solve_relaxed_ilp(input_data, time_limit=300):
+    print("--- Setting up Relaxed ILP (Ignoring Switch Penalties & Genre Limits) ---")
+
+    # 1. Extract Constants
     O = input_data['opening_time']
     E = input_data['closing_time']
     D = input_data['min_duration']
-    R = input_data['max_consecutive_genre']
-    S_pen = input_data['switch_penalty']
-    T_pen = input_data['termination_penalty']
+    # R (Genre limit) and S (Switch penalty) are IGNORED in this relaxed version
+
     priority_blocks = input_data.get('priority_blocks', [])
     time_prefs = input_data.get('time_preferences', [])
     channels = input_data['channels']
 
-    # Build program list
-    programs = []
+    # 2. Pre-process Programs
+    # We filter out programs that physically cannot be played (too short, wrong time)
+    # But we keep everything else.
+    valid_programs = []
+
     for channel in channels:
+        chan_id = channel['channel_id']
         for prog in channel['programs']:
-            if prog['start'] < O or prog['end'] > E:
-                continue
-            if prog['end'] - prog['start'] < D:
-                continue
+            p_start = prog['start']
+            p_end = prog['end']
+            duration = p_end - p_start
 
-            blocked = False
+            # 1. Global Time Window Check
+            if p_start < O or p_end > E: continue
+            if p_start >= E or p_end <= O: continue
+
+            # 2. Min Duration Check
+            if duration < D: continue
+
+            # 3. Priority Block Check (Hard Constraint - cannot be violated)
+            is_blocked = False
             for block in priority_blocks:
-                if prog['start'] < block['end'] and prog['end'] > block['start']:
-                    if channel['channel_id'] not in block['allowed_channels']:
-                        blocked = True
+                # If program overlaps with block
+                if p_start < block['end'] and p_end > block['start']:
+                    if chan_id not in block['allowed_channels']:
+                        is_blocked = True
                         break
-            if blocked:
-                continue
+            if is_blocked: continue
 
-            bonus = 0
+            # 4. Calculate "Self-Contained" Score
+            # Since we ignore penalties, the score is just Base + Bonus
+            current_score = prog['score']
             for pref in time_prefs:
                 if prog['genre'] == pref['preferred_genre']:
-                    ov_start = max(prog['start'], pref['start'])
-                    ov_end = min(prog['end'], pref['end'])
-                    if ov_end - ov_start >= D:
-                        bonus += pref['bonus']
+                    overlap_start = max(p_start, pref['start'])
+                    overlap_end = min(p_end, pref['end'])
+                    # Bonus applies if overlap is at least D
+                    if (overlap_end - overlap_start) >= D:
+                        current_score += pref['bonus']
 
-            programs.append({
-                'idx': len(programs),
+            valid_programs.append({
                 'id': prog['program_id'],
-                'channel': channel['channel_id'],
-                'start': prog['start'],
-                'end': prog['end'],
+                'channel': chan_id,
+                'start': p_start,
+                'end': p_end,
                 'genre': prog['genre'],
-                'score': prog['score'],
-                'bonus': bonus
+                'score_val': current_score,
+                'original_obj': prog
             })
 
-    programs.sort(key=lambda p: p['start'])
-    for i, p in enumerate(programs):
-        p['idx'] = i
+    n = len(valid_programs)
+    print(f"Programs considered: {n}")
 
-    n = len(programs)
-    print(f"Programs after filtering: {n}")
+    # 3. Create ILP Model
+    prob = LpProblem("Relaxed_TV_Schedule", LpMaximize)
 
-    # === BUILD INTERVAL CLIQUES ===
-    # Instead of pairwise overlap constraints, find maximal cliques
-    # For interval graphs, we can use a sweep line approach
-
-    events = []
-    for i, p in enumerate(programs):
-        events.append((p['start'], 'start', i))
-        events.append((p['end'], 'end', i))
-    events.sort(key=lambda e: (e[0], e[1] == 'start'))  # ends before starts at same time
-
-    # Find all maximal cliques using sweep line
-    active = set()
-    cliques = []
-
-    for time_point, event_type, prog_idx in events:
-        if event_type == 'start':
-            active.add(prog_idx)
-            # Current active set is a clique
-            if len(active) > 1:
-                cliques.append(frozenset(active))
-        else:
-            active.discard(prog_idx)
-
-    # Remove dominated cliques (subsets of other cliques)
-    cliques = list(set(cliques))
-    cliques.sort(key=lambda c: -len(c))
-
-    maximal_cliques = []
-    for c in cliques:
-        is_subset = False
-        for mc in maximal_cliques:
-            if c <= mc:
-                is_subset = True
-                break
-        if not is_subset:
-            maximal_cliques.append(c)
-
-    print(f"Found {len(maximal_cliques)} maximal overlap cliques")
-
-    # Create ILP
-    prob = LpProblem("TV_Schedule", LpMaximize)
-
-    # Variables
+    # Variables: x[i] = 1 if program i is selected, 0 otherwise
     x = LpVariable.dicts("x", range(n), cat='Binary')
 
-    # Objective
-    obj = lpSum((programs[i]['score'] + programs[i]['bonus']) * x[i] for i in range(n))
-    prob += obj
+    # Objective: Maximize sum of scores (ignoring switch costs)
+    prob += lpSum([valid_programs[i]['score_val'] * x[i] for i in range(n)])
 
-    # Constraint 1: Clique constraints (at most 1 from each clique)
-    for idx, clique in enumerate(maximal_cliques):
-        if len(clique) > 1:
-            prob += lpSum(x[i] for i in clique) <= 1, f"clique_{idx}"
+    # 4. Constraints
+    # We ONLY apply the Overlap Constraint.
+    # (Genre constraints and Sequence constraints are removed)
 
-    # Constraint 2: Genre diversity (simplified)
-    # For each genre, in any time window of W minutes, limit selections
-    # This is a heuristic approximation
-    genre_progs = defaultdict(list)
-    for i, p in enumerate(programs):
-        genre_progs[p['genre']].append(i)
+    # Efficient Overlap: Discretize time into 1-minute buckets
+    # For every minute t, sum of active programs <= 1
+    # We only care about minutes where a program actually starts or ends to save memory,
+    # but iterating strict minutes is safer for correctness.
 
-    # Only add constraints for genres with many programs
-    for genre, prog_list in genre_progs.items():
-        if len(prog_list) <= R:
-            continue
+    # Map time points to programs that cover them
+    time_map = {}
+    for i in range(n):
+        p = valid_programs[i]
+        # Range is inclusive start, exclusive end
+        for t in range(p['start'], p['end']):
+            if t not in time_map: time_map[t] = []
+            time_map[t].append(i)
 
-        sorted_list = sorted(prog_list, key=lambda i: programs[i]['start'])
+    # Add constraints for relevant time points
+    # (Optimization: We only need to check 'start' times of overlapping interactions,
+    # but checking every occupied minute is the most robust implementation)
+    count_constraints = 0
+    for t in time_map:
+        if len(time_map[t]) > 1:  # Only need constraint if overlap is possible
+            prob += lpSum([x[i] for i in time_map[t]]) <= 1
+            count_constraints += 1
 
-        # Sliding window: any R+1 consecutive programs (by time) can't all be selected
-        # if they could potentially be scheduled consecutively
-        for w in range(len(sorted_list) - R):
-            window = sorted_list[w:w + R + 1]
+    print(f"Constraints added: {count_constraints}")
 
-            # Quick check: if first and last don't overlap, they might all fit
-            first, last = window[0], window[-1]
-            if programs[last]['start'] >= programs[first]['end']:
-                # Check if no gaps large enough for another program
-                could_be_consecutive = True
-                for k in range(len(window) - 1):
-                    gap = programs[window[k+1]]['start'] - programs[window[k]]['end']
-                    if gap >= D:  # Another program could fit
-                        could_be_consecutive = False
-                        break
+    # 5. Solve
+    # We use PULP_CBC_CMD (Coin-OR Branch and Cut)
+    # Msg=0 turns off the verbose solver logs
+    solver = PULP_CBC_CMD(msg=0, timeLimit=time_limit)
+    prob.solve(solver)
 
-                if could_be_consecutive:
-                    prob += lpSum(x[i] for i in window) <= R, f"g_{hash(genre) % 10000}_{w}"
+    status = LpStatus[prob.status]
+    print(f"Solver Status: {status}")
 
-    print(f"Constraints: {len(prob.constraints)}")
+    if status != 'Optimal':
+        print("Could not find optimal solution.")
+        return None
 
-    # Solve with timeout and error handling
-    ilp_time = min(time_limit * 0.7, time_limit - 60)
-    print(f"Solving ILP ({ilp_time:.0f}s limit)...")
+    # 6. Extract Result
+    selected_indices = [i for i in range(n) if value(x[i]) == 1]
 
-    try:
-        solver = PULP_CBC_CMD(msg=1, timeLimit=ilp_time, options=['maxSolutions 10'])
-        prob.solve(solver)
-        status = LpStatus[prob.status]
-    except Exception as e:
-        print(f"Solver error: {e}")
-        status = "Error"
+    # Sort by start time for the output list
+    selected_indices.sort(key=lambda i: valid_programs[i]['start'])
 
-    print(f"Status: {status}")
+    schedule_output = []
+    final_score = 0
 
-    # Extract solution
-    selected = []
-    if status in ["Optimal", "Not Solved"]:  # Not Solved means time limit with solution
-        selected = [i for i in range(n) if value(x[i]) is not None and value(x[i]) > 0.5]
+    print("\n--- RELAXED SCHEDULE (No Penalties) ---")
+    for idx in selected_indices:
+        p = valid_programs[idx]
+        final_score += p['score_val']
+        schedule_output.append({
+            "program_id": p['id'],
+            "channel_id": p['channel'],
+            "start": p['start'],
+            "end": p['end']
+        })
+        print(f"[{p['start']}-{p['end']}] {p['id']} (Score: {p['score_val']})")
 
-    if not selected:
-        print("No ILP solution, using greedy fallback...")
-        selected = greedy_solution(programs, R, D)
+    print("=" * 40)
+    print(f"CALCULATED RELAXED SCORE: {final_score}")
+    print("=" * 40)
 
-    selected.sort(key=lambda i: programs[i]['start'])
-    print(f"Selected {len(selected)} programs")
+    return {"scheduled_programs": schedule_output, "total_score": final_score}
 
-    # Post-process: fix genre violations
-    schedule = fix_genre_violations(selected, programs, R)
 
-    # Try to add more programs
-    schedule = fill_gaps(schedule, programs, n, R, D)
-
-    # Final score
-    schedule.sort(key=lambda i: programs[i]['start'])
-    total_base = sum(programs[i]['score'] for i in schedule)
-    total_bonus = sum(programs[i]['bonus'] for i in schedule)
-    switches = sum(1 for k in range(len(schedule)-1)
-                   if programs[schedule[k]]['channel'] != programs[schedule[k+1]]['channel'])
-
-    print("\n" + "="*60)
-    print("SOLUTION")
-    print("="*60)
-    print(f"Programs: {len(schedule)}")
-    print(f"Base: {total_base}")
-    print(f"Bonus: {total_bonus}")
-    print(f"Switches: {switches} (penalty: -{switches * S_pen})")
-    print(f"TOTAL: {total_base + total_bonus - switches * S_pen}")
-    print(f"Time: {time.time() - start_time:.1f}s")
-
-    # Verify
-    violations = check_genre(schedule, programs, R)
-    if violations:
-        print(f"WARNING: {len(violations)} genre violations!")
-
-    output = {
-        'scheduled_programs': [
-            {
-                'program_id': programs[i]['id'],
-                'channel_id': programs[i]['channel'],
-                'start': programs[i]['start'],
-                'end': programs[i]['end']
-            }
-            for i in schedule
-        ]
-    }
-    return output
-
-def greedy_solution(programs, R, D):
-    """Greedy fallback solution"""
-    n = len(programs)
-    sorted_idx = sorted(range(n), key=lambda i: -(programs[i]['score'] + programs[i]['bonus']))
-
-    schedule = []
-    last_end = -1
-    genre_run = 0
-    last_genre = None
-
-    for i in sorted_idx:
-        p = programs[i]
-        if p['start'] >= last_end:
-            # Check genre
-            if p['genre'] == last_genre:
-                if genre_run >= R:
-                    continue
-                genre_run += 1
-            else:
-                genre_run = 1
-                last_genre = p['genre']
-
-            schedule.append(i)
-            last_end = p['end']
-
-    return sorted(schedule, key=lambda i: programs[i]['start'])
-
-def check_genre(schedule, programs, R):
-    """Check genre violations"""
-    violations = []
-    run = 1
-    last_g = None
-    for idx, i in enumerate(schedule):
-        g = programs[i]['genre']
-        if g == last_g:
-            run += 1
-            if run > R:
-                violations.append(idx)
-        else:
-            run = 1
-        last_g = g
-    return violations
-
-def fix_genre_violations(schedule, programs, R):
-    """Remove programs to fix genre violations"""
-    schedule = list(schedule)
-
-    max_iter = 100
-    for _ in range(max_iter):
-        violations = check_genre(schedule, programs, R)
-        if not violations:
-            break
-
-        # Find the run containing first violation
-        v = violations[0]
-        g = programs[schedule[v]]['genre']
-
-        # Find run boundaries
-        start = v
-        while start > 0 and programs[schedule[start-1]]['genre'] == g:
-            start -= 1
-        end = v
-        while end < len(schedule)-1 and programs[schedule[end+1]]['genre'] == g:
-            end += 1
-
-        # Remove lowest value in run
-        run_indices = list(range(start, end + 1))
-        worst = min(run_indices, key=lambda idx: programs[schedule[idx]]['score'] + programs[schedule[idx]]['bonus'])
-        schedule.pop(worst)
-
-    return schedule
-
-def fill_gaps(schedule, programs, n, R, D):
-    """Try to add more programs"""
-    schedule = list(schedule)
-    used = set(schedule)
-    unused = sorted([i for i in range(n) if i not in used],
-                    key=lambda i: -(programs[i]['score'] + programs[i]['bonus']))
-
-    for prog_idx in unused:
-        p = programs[prog_idx]
-
-        # Find position
-        pos = 0
-        for k, s in enumerate(schedule):
-            if programs[s]['start'] >= p['end']:
-                break
-            if programs[s]['end'] <= p['start']:
-                pos = k + 1
-
-        # Check overlap
-        if pos > 0 and programs[schedule[pos-1]]['end'] > p['start']:
-            continue
-        if pos < len(schedule) and p['end'] > programs[schedule[pos]]['start']:
-            continue
-
-        # Check genre
-        test = schedule[:pos] + [prog_idx] + schedule[pos:]
-        if not check_genre(test, programs, R):
-            schedule = test
-            used.add(prog_idx)
-
-    return schedule
-
-def save_output(data, filepath):
+def save_output(output_data, filepath):
+    # Remove the score key before saving to keep format identical to competition spec
+    data_to_save = {"scheduled_programs": output_data["scheduled_programs"]}
     with open(filepath, 'w') as f:
-        json.dump(data, f, indent=4)
+        json.dump(data_to_save, f, indent=4)
+
 
 if __name__ == "__main__":
-    input_file = sys.argv[1] if len(sys.argv) > 1 else "input.json"
-    output_file = sys.argv[2] if len(sys.argv) > 2 else "output.json"
-    time_limit = int(sys.argv[3]) if len(sys.argv) > 3 else 300
+    # Default values
+    input_file = "kosovo_tv_input.json"
+    output_file = "relaxed_solution.json"
+    time_limit = 300
 
-    print(f"Input: {input_file}")
-    data = load_input(input_file)
-    result = solve_tv_scheduling(data, time_limit)
+    # Parse command line arguments if provided
+    # Format: python script.py [input_file] [output_file] [time_limit]
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]
+    if len(sys.argv) > 2:
+        output_file = sys.argv[2]
+    if len(sys.argv) > 3:
+        try:
+            time_limit = int(sys.argv[3])
+        except ValueError:
+            print("Invalid time limit provided. Using default (300s).")
 
-    if result:
-        save_output(result, output_file)
-        print(f"\nSaved to {output_file}")
+    print(f"Running with:\n Input: {input_file}\n Output: {output_file}\n Time Limit: {time_limit}s")
+
+    try:
+        input_data = load_input(input_file)
+        result = solve_relaxed_ilp(input_data, time_limit)
+
+        if result:
+            save_output(result, output_file)
+            print(f"Output saved to {output_file}")
+    except FileNotFoundError:
+        print(f"Error: Input file '{input_file}' not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
