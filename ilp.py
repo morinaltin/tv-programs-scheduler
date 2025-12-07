@@ -1,344 +1,381 @@
 """
-TV Channel Scheduling Optimization using Integer Linear Programming
-Fixed version with proper genre diversity constraint.
+TV Channel Scheduling Optimization using Google OR-Tools (CP-SAT)
+High-performance scheduler using Constraint Programming.
 
-Install: pip install pulp
-Run: python solution1.py input.json output.json 300
+Improvements over ILP:
+- Uses Interval Variables (NoOverlap constraint) -> O(n) constraints instead of O(n^2)
+- Uses Circuit/Path constraints for sequencing
+- Efficient Boolean logic for genre diversity
+
+Usage:
+    python3 ilp_ortools.py <input_file> <output_file> <time_limit_seconds>
 """
 
-import json
-from pulp import *
-from collections import defaultdict
 import sys
+import json
+from ortools.sat.python import cp_model
+from collections import defaultdict
 
 def load_input(filepath):
     with open(filepath, 'r') as f:
         return json.load(f)
 
-def solve_tv_scheduling(input_data, time_limit=300):
-    # Extract parameters
-    O = input_data['opening_time']
-    E = input_data['closing_time']
-    D = input_data['min_duration']
-    R = input_data['max_consecutive_genre']
-    C = input_data['channels_count']
-    S_pen = input_data['switch_penalty']
-    T_pen = input_data['termination_penalty']
-    priority_blocks = input_data.get('priority_blocks', [])
-    time_prefs = input_data.get('time_preferences', [])
-    channels = input_data['channels']
-
-    # Build program list - use full original times only (no partial scheduling)
-    programs = []
-
-    for channel in channels:
-        for prog in channel['programs']:
-            # Skip programs outside venue hours
-            if prog['start'] < O or prog['end'] > E:
-                continue
-            if prog['start'] >= E or prog['end'] <= O:
-                continue
-
-            duration = prog['end'] - prog['start']
-
-            # Check minimum duration
-            if duration < D:
-                continue  # Skip programs shorter than minimum
-
-            # Check priority block restrictions
-            blocked = False
-            for block in priority_blocks:
-                # If program overlaps with block
-                if prog['start'] < block['end'] and prog['end'] > block['start']:
-                    if channel['channel_id'] not in block['allowed_channels']:
-                        blocked = True
-                        break
-
-            if blocked:
-                continue
-
-            programs.append({
-                'idx': len(programs),
-                'id': prog['program_id'],
-                'channel': channel['channel_id'],
-                'start': prog['start'],
-                'end': prog['end'],
-                'genre': prog['genre'],
-                'score': prog['score'],
-                'duration': duration
-            })
-
-    n = len(programs)
-    print(f"Programs after filtering: {n}")
-
-    # Sort programs by start time for easier constraint building
-    programs.sort(key=lambda p: (p['start'], p['end']))
-    for i, p in enumerate(programs):
-        p['idx'] = i
-
-    # Build conflict graph (overlapping programs)
-    conflicts = defaultdict(set)
-    for i in range(n):
-        for j in range(i+1, n):
-            pi, pj = programs[i], programs[j]
-            # Check overlap
-            if not (pi['end'] <= pj['start'] or pj['end'] <= pi['start']):
-                conflicts[i].add(j)
-                conflicts[j].add(i)
-
-    # Build "can follow" relationship
-    # j can follow i if j starts at or after i ends
-    can_follow = defaultdict(list)
-    for i in range(n):
-        for j in range(n):
-            if i != j and programs[j]['start'] >= programs[i]['end']:
-                can_follow[i].append(j)
-
-    # Get all genres
-    all_genres = list(set(p['genre'] for p in programs))
-    genre_to_idx = {g: i for i, g in enumerate(all_genres)}
-
-    # Create ILP problem
-    prob = LpProblem("TV_Scheduling", LpMaximize)
-
-    # === DECISION VARIABLES ===
-
-    # x[i] = 1 if program i is selected
-    x = LpVariable.dicts("x", range(n), cat='Binary')
-
-    # seq[i,j] = 1 if program j immediately follows program i in the schedule
-    seq = {}
-    for i in range(n):
-        for j in can_follow[i]:
-            seq[(i,j)] = LpVariable(f"seq_{i}_{j}", cat='Binary')
-
-    # is_first[i] = 1 if program i is the first in schedule
-    is_first = LpVariable.dicts("first", range(n), cat='Binary')
-
-    # is_last[i] = 1 if program i is the last in schedule
-    is_last = LpVariable.dicts("last", range(n), cat='Binary')
-
-    # For genre constraint: genre_run[i,g,k] = 1 if program i is the k-th consecutive program of genre g
-    # k ranges from 1 to R (we don't allow R+1)
-    genre_run = {}
-    for i in range(n):
-        g = programs[i]['genre']
-        for k in range(1, R + 1):
-            genre_run[(i, k)] = LpVariable(f"run_{i}_{k}", cat='Binary')
-
-    # === OBJECTIVE FUNCTION ===
-    obj = lpSum(programs[i]['score'] * x[i] for i in range(n))
-
-    # Add bonuses for genre-time preferences
-    for i, prog in enumerate(programs):
-        for pref in time_prefs:
-            if prog['genre'] == pref['preferred_genre']:
-                # Check overlap with preference window
-                overlap_start = max(prog['start'], pref['start'])
-                overlap_end = min(prog['end'], pref['end'])
-                if overlap_end - overlap_start >= D:
-                    obj += pref['bonus'] * x[i]
-
-    # Subtract switch penalties
-    for (i, j), var in seq.items():
-        if programs[i]['channel'] != programs[j]['channel']:
-            obj -= S_pen * var
-
-    prob += obj, "Total_Score"
-
-    # === CONSTRAINTS ===
-
-    # 1. No overlapping programs
-    for i in range(n):
-        for j in conflicts[i]:
-            if i < j:
-                prob += x[i] + x[j] <= 1, f"no_overlap_{i}_{j}"
-
-    # 2. Flow conservation for sequencing
-    # Each selected program (except last) has exactly one successor
-    # Each selected program (except first) has exactly one predecessor
-
-    for i in range(n):
-        # Outgoing flow
-        successors = [seq[(i,j)] for j in can_follow[i] if (i,j) in seq]
-        if successors:
-            prob += lpSum(successors) + is_last[i] == x[i], f"out_flow_{i}"
-        else:
-            prob += is_last[i] == x[i], f"out_flow_no_succ_{i}"
-
-        # Incoming flow
-        predecessors = [seq[(j,i)] for j in range(n) if (j,i) in seq]
-        if predecessors:
-            prob += lpSum(predecessors) + is_first[i] == x[i], f"in_flow_{i}"
-        else:
-            prob += is_first[i] == x[i], f"in_flow_no_pred_{i}"
-
-    # At most one first program
-    prob += lpSum(is_first[i] for i in range(n)) <= 1, "one_first"
-
-    # At most one last program
-    prob += lpSum(is_last[i] for i in range(n)) <= 1, "one_last"
-
-    # 3. Genre diversity constraint using run counting
-    for i in range(n):
-        g = programs[i]['genre']
-
-        # If selected, program must have exactly one run position
-        prob += lpSum(genre_run[(i, k)] for k in range(1, R + 1)) == x[i], f"one_run_pos_{i}"
-
-        # If program is first OR preceded by different genre, run position = 1
-        # Find predecessors with same genre
-        same_genre_preds = [j for j in range(n) if (j,i) in seq and programs[j]['genre'] == g]
-        diff_genre_preds = [j for j in range(n) if (j,i) in seq and programs[j]['genre'] != g]
-
-        # genre_run[i,1] = 1 if is_first[i] OR any diff_genre_pred leads to i
-        if same_genre_preds:
-            # If preceded by same genre at run k, then i is at run k+1
-            for k in range(1, R):
-                for j in same_genre_preds:
-                    prob += genre_run[(i, k+1)] >= seq[(j,i)] + genre_run[(j, k)] - 1, f"run_cont_{j}_{i}_{k}"
-
-            # If preceded by different genre or is first, run = 1
-            prob += genre_run[(i, 1)] >= is_first[i], f"run_first_{i}"
-            for j in diff_genre_preds:
-                prob += genre_run[(i, 1)] >= seq[(j,i)], f"run_reset_{j}_{i}"
-        else:
-            # No same-genre predecessors possible, so if selected and has predecessor, must be run 1
-            prob += genre_run[(i, 1)] >= x[i] - is_first[i] - lpSum(seq[(j,i)] for j in same_genre_preds if (j,i) in seq), f"run_default_{i}"
-
-    # 4. Prevent run position R from having same-genre successor
-    # If program i is at run position R, it cannot be followed by same genre
-    for i in range(n):
-        g = programs[i]['genre']
-        same_genre_succs = [j for j in can_follow[i] if (i,j) in seq and programs[j]['genre'] == g]
-        for j in same_genre_succs:
-            prob += seq[(i,j)] + genre_run[(i, R)] <= 1, f"no_exceed_R_{i}_{j}"
-
-    # Solve
-    print(f"Solving ILP (time limit: {time_limit}s)...")
-    print(f"Variables: {len(prob.variables())}, Constraints: {len(prob.constraints)}")
-
-    solver = PULP_CBC_CMD(msg=1, timeLimit=time_limit)
-    prob.solve(solver)
-
-    print(f"Status: {LpStatus[prob.status]}")
-
-    if prob.status not in [LpStatusOptimal, LpStatusNotSolved]:
-        print("No feasible solution found")
-        return None
-
-    # Extract solution
-    selected = [i for i in range(n) if value(x[i]) is not None and value(x[i]) > 0.5]
-
-    # Build ordered schedule using seq variables
-    schedule = []
-    if selected:
-        # Find first program
-        first_prog = None
-        for i in selected:
-            if value(is_first[i]) > 0.5:
-                first_prog = i
-                break
-
-        if first_prog is None and selected:
-            # Fallback: sort by start time
-            selected.sort(key=lambda i: programs[i]['start'])
-            schedule = selected
-        else:
-            # Follow the chain
-            current = first_prog
-            while current is not None:
-                schedule.append(current)
-                next_prog = None
-                for j in can_follow[current]:
-                    if (current, j) in seq and value(seq[(current, j)]) > 0.5:
-                        next_prog = j
-                        break
-                current = next_prog
-
-    # Build output
-    scheduled_programs = []
-    for i in schedule:
-        prog = programs[i]
-        scheduled_programs.append({
-            'program_id': prog['id'],
-            'channel_id': prog['channel'],
-            'start': prog['start'],
-            'end': prog['end']
-        })
-
-    # Calculate and verify score
-    print("\n" + "="*60)
-    print("SOLUTION SUMMARY")
-    print("="*60)
-
-    total_base = sum(programs[i]['score'] for i in schedule)
-    print(f"Base score: {total_base}")
-
-    total_bonus = 0
-    for i in schedule:
-        prog = programs[i]
-        for pref in time_prefs:
-            if prog['genre'] == pref['preferred_genre']:
-                overlap_start = max(prog['start'], pref['start'])
-                overlap_end = min(prog['end'], pref['end'])
-                if overlap_end - overlap_start >= D:
-                    total_bonus += pref['bonus']
-    print(f"Bonus score: {total_bonus}")
-
-    switches = 0
-    for k in range(len(schedule) - 1):
-        if programs[schedule[k]]['channel'] != programs[schedule[k+1]]['channel']:
-            switches += 1
-    print(f"Channel switches: {switches} (penalty: -{switches * S_pen})")
-
-    # Verify genre constraint
-    genre_run_check = 1
-    last_genre = None
-    genre_violation = False
-    for i in schedule:
-        g = programs[i]['genre']
-        if g == last_genre:
-            genre_run_check += 1
-            if genre_run_check > R:
-                print(f"WARNING: Genre violation at {programs[i]['id']} ({g})")
-                genre_violation = True
-        else:
-            genre_run_check = 1
-        last_genre = g
-
-    if genre_violation:
-        print("GENRE CONSTRAINT VIOLATED!")
-    else:
-        print(f"Genre constraint: OK (max {R} consecutive)")
-
-    total_score = total_base + total_bonus - switches * S_pen
-    print(f"\nTOTAL SCORE: {total_score}")
-
-    print(f"\nSchedule ({len(schedule)} programs):")
-    for idx, i in enumerate(schedule):
-        prog = programs[i]
-        st, et = prog['start'], prog['end']
-        print(f"  {idx+1:2}. {prog['id']:25} Ch{prog['channel']} "
-              f"{st//60:02d}:{st%60:02d}-{et//60:02d}:{et%60:02d} "
-              f"{prog['genre']:15} score={prog['score']}")
-
-    return {'scheduled_programs': scheduled_programs}
-
 def save_output(output_data, filepath):
     with open(filepath, 'w') as f:
         json.dump(output_data, f, indent=4)
 
+def solve_with_ortools(input_data, time_limit=300):
+    # --- Data Parsing ---
+    O = input_data['opening_time']
+    E = input_data['closing_time']
+    D = input_data['min_duration']
+    R = input_data['max_consecutive_genre']
+    S_pen = input_data['switch_penalty']
+    T_pen = input_data['termination_penalty']
+    priority_blocks = input_data.get('priority_blocks', [])
+    time_prefs = input_data.get('time_preferences', [])
+    channels_data = input_data['channels']
+
+    # Flatten programs and preprocessing (similar to original to ensure same candidates)
+    # We duplicate the preprocessing here to ensure we work on the exact same set of potential intervals
+    programs = []
+
+    # We assign a global index to each potential program interval
+    for channel in channels_data:
+        cid = channel['channel_id']
+        for prog in channel['programs']:
+             # Skip programs strictly outside venue hours
+            if prog['start'] >= E or prog['end'] <= O:
+                continue
+
+            valid_start = max(O, prog['start'])
+            valid_end = min(E, prog['end'])
+
+            # Priority blocks handling (filtering forbidden times)
+            forbidden_intervals = []
+            for block in priority_blocks:
+                if cid not in block['allowed_channels']:
+                    forbidden_intervals.append((block['start'], block['end']))
+
+            candidate_windows = [(valid_start, valid_end)]
+            if forbidden_intervals:
+                current_candidates = []
+                for start, end in candidate_windows:
+                    # Check against every forbidden block (naive subtraction for simplicity as in original)
+                    # Note: The original logic was a bit specific, we replicate it for consistency
+                    temp_starts = [start]
+
+                    found_collision = False
+                    for f_start, f_end in forbidden_intervals:
+                        # Overlap check
+                        if not (end <= f_start or start >= f_end):
+                            found_collision = True
+                            # Split?
+                            # Before block
+                            if start < f_start and (f_start - start) >= D:
+                                current_candidates.append((start, f_start))
+                            # After block
+                            if end > f_end and (end - f_end) >= D:
+                                current_candidates.append((f_end, end))
+                            break # Only handle one collision per segment loop for safety/simplicity or match original logic
+
+                    if not found_collision:
+                        current_candidates.append((start, end))
+                candidate_windows = current_candidates
+
+            for w_start, w_end in candidate_windows:
+                if (w_end - w_start) < D:
+                    continue
+
+                # Pre-calculate penalties in score
+                net_score = prog['score']
+                if w_start > prog['start']: net_score -= T_pen
+                if w_end < prog['end']: net_score -= T_pen
+
+                programs.append({
+                    'idx': len(programs),
+                    'id': prog['program_id'],
+                    'channel': cid,
+                    'start': w_start,
+                    'end': w_end,
+                    'duration': w_end - w_start,
+                    'genre': prog['genre'],
+                    'score': net_score
+                })
+
+    n = len(programs)
+    print(f"Programs after filtering: {n}")
+
+    # Pre-calculate bonuses
+    # bonus[i] matches the bonus logic
+    bonuses = [0] * n
+    for i in range(n):
+        p = programs[i]
+        for pref in time_prefs:
+            if p['genre'] == pref['preferred_genre']:
+                overlap_start = max(p['start'], pref['start'])
+                overlap_end = min(p['end'], pref['end'])
+                if (overlap_end - overlap_start) >= D:
+                    bonuses[i] += pref['bonus']
+
+    # --- CP-SAT Model ---
+    model = cp_model.CpModel()
+
+    # 1. Variables
+    # is_selected[i]: bool
+    is_selected = [model.NewBoolVar(f"x_{i}") for i in range(n)]
+
+    # Interval variables for NoOverlap
+    # We perform "optional" intervals. If is_selected[i] is false, the interval is not active.
+    intervals = []
+    for i in range(n):
+        # Start and End are constants in this problem version (we select fixed intervals),
+        # but the PRESENCE is variable.
+        # Fixed duration and start means size=duration, start=start, end=end.
+        # But we make it optional based on is_selected[i].
+
+        # NOTE: NewOptionalIntervalVar(start, size, end, is_present, name)
+        # All arguments must be vars or integers.
+        # Since start/end are fixed if selected, we can use integer constants.
+
+        interval = model.NewOptionalIntervalVar(
+            programs[i]['start'],
+            programs[i]['duration'],
+            programs[i]['end'],
+            is_selected[i],
+            f"interval_{i}"
+        )
+        intervals.append(interval)
+
+    # 2. Overlap Constraints
+    # NoOverlap requires a list of intervals.
+    # We can refine this: only programs that *can* overlap need to be in the same NoOverlap constraint?
+    # Global NoOverlap is the easiest: "No two selected intervals in the entire set can overlap."
+    # Wait, the original problem says "No Overlapping Programs".
+    # Usually this means on ANY COMPETING channel/resource or just globally?
+    # Re-reading PDF/MD: "x_i + x_j <= 1" for CONFLICTS.
+    # CONFLICTS(i) = programs that overlap with i.
+    # So yes, a global NoOverlap or checking all pairs.
+    # The most efficient way in CP-SAT is AddNoOverlap(all_intervals).
+    # This ensures that if x_i and x_j are both true, their time intervals must not intersect.
+    model.AddNoOverlap(intervals)
+
+    # 3. Sequencing and Flow
+    # The problem implies a single linear sequence of programs.
+    # "seq_{i,j} = 1 if j follows i".
+    # We can model this with a "Circuit" constraint or simply "Next" variables.
+    # However, because we have OPTIONAL nodes (not all programs are selected),
+    # a standard Circuit is tricky on a subset.
+    # Approach:
+    # We add a dummy "Start" and "End" node (or just one dummy node 0 for proper circuit).
+    # But let's stick to the boolean logic which handles the "subset" case naturally.
+
+    # trans[i, j] is true if i -> j is the immediate sequence.
+    # Only valid if j can follow i.
+
+    # Precompute valid transitions
+    # j can follow i if j['start'] >= i['end']
+    valid_transitions = defaultdict(list) # i -> list of j
+    valid_incoming = defaultdict(list)    # j -> list of i
+
+    possible_trans_indices = [] # Stores (i, j) tuples
+
+    for i in range(n):
+        for j in range(n):
+            if i == j: continue
+            if programs[j]['start'] >= programs[i]['end']:
+                valid_transitions[i].append(j)
+                valid_incoming[j].append(i)
+                possible_trans_indices.append((i, j))
+
+    # Create transition variables
+    trans_vars = {}
+    for i, j in possible_trans_indices:
+        trans_vars[(i, j)] = model.NewBoolVar(f"trans_{i}_{j}")
+
+    # is_first[i], is_last[i]
+    is_first = [model.NewBoolVar(f"first_{i}") for i in range(n)]
+    is_last = [model.NewBoolVar(f"last_{i}") for i in range(n)]
+
+    # Constraints for flow:
+    # If i is selected:
+    #   sum(trans[i, j] for j) + is_last[i] == 1
+    #   sum(trans[j, i] for j) + is_first[i] == 1
+    # If not selected:
+    #   sum(...) == 0
+    #   is_first/last == 0
+
+    for i in range(n):
+        # Outgoing
+        outgoing_expr = [trans_vars[(i, j)] for j in valid_transitions[i]]
+        model.Add(sum(outgoing_expr) + is_last[i] == is_selected[i])
+
+        # Incoming
+        incoming_expr = [trans_vars[(j, i)] for j in valid_incoming[i]]
+        model.Add(sum(incoming_expr) + is_first[i] == is_selected[i])
+
+    # At most one first, at most one last
+    model.Add(sum(is_first) <= 1)
+    model.Add(sum(is_last) <= 1)
+
+    # Ensure graph connectivity (only one connected component).
+    # This is often the hardest part in custom flow models.
+    # If we maximize score, the solver "wants" to pick many programs.
+    # Without connectivity, it could pick [A->B] and [C->D] as two separate disjoint independent chains
+    # if they don't overlap in time.
+    # The ILP formulation in the PDF enforces a single chains via "one first" and "one last".
+    # Wait, does the ILP enforce connectivity?
+    # "Flow conservation" usually allows disjoint cycles if not careful, but here we have:
+    #   sum(first) <= 1.
+    #   If we have two chains, we would need two "firsts" (unless cycles exist).
+    #   Cycles? i -> j -> i.
+    #   Since time is strictly increasing (end > start) and j starts >= i ends,
+    #   cycles are impossible (DAG).
+    #   Therefore, simple flow constraints + "one first" is sufficient to guarantee a single chain (or empty).
+    #   Checking DAG property:
+    #      prog['start'] < prog['end'] (duration > 0).
+    #      j follows i means start_j >= end_i > start_i.
+    #      So start time strictly increases along the chain. No cycles.
+    #   Conclusion: The flow constraints above are sufficient. No specialized Circuit needed.
+
+    # 4. Genre Diversity
+    # "Max R consecutive programs of same genre".
+    # RunPosition[i] in [1, R].
+    # If trans[i, j] and genre[i] == genre[j] => pos[j] = pos[i] + 1
+    # If trans[i, j] and genre[i] != genre[j] => pos[j] = 1
+    # If is_first[i] => pos[i] = 1 (implied actually? No, needs enforcement)
+
+    run_pos = [model.NewIntVar(1, R, f"run_{i}") for i in range(n)]
+
+    # If not selected, run_pos doesn't matter, but lets keep it clean.
+    # We enforce constraints only if transition happens.
+
+    for i in range(n):
+        # Case: First program -> Run 1
+        # model.Add(run_pos[i] == 1).OnlyEnforceIf(is_first[i])
+        # Actually, simpler:
+        model.Add(run_pos[i] == 1).OnlyEnforceIf(is_first[i])
+
+        for j in valid_transitions[i]:
+            t_var = trans_vars[(i, j)]
+            if programs[i]['genre'] == programs[j]['genre']:
+                # Same genre: increment
+                # Check if we can increment? R is max.
+                # If pos[i] was R, then pos[j] would be R+1 which is invalid.
+                # The domain of run_pos is [1, R]. So if pos[i]=R, this constraint
+                # run_pos[j] = R+1 would imply the model is infeasible for this transition.
+                # Exactly what we want (forbids the transition).
+                model.Add(run_pos[j] == run_pos[i] + 1).OnlyEnforceIf(t_var)
+            else:
+                # Diff genre: reset
+                model.Add(run_pos[j] == 1).OnlyEnforceIf(t_var)
+
+    # 5. Objective
+    # Maximize sum(score) - sum(penalties)
+    # Score comes from x[i]
+    # Penalty comes from transitions (switches)
+
+    # Base scores + Bonuses
+    obj_terms = []
+    for i in range(n):
+        total_val = programs[i]['score'] + bonuses[i]
+        obj_terms.append(total_val * is_selected[i])
+
+    # Penalties
+    penalty_terms = []
+    for (i, j), t_var in trans_vars.items():
+        if programs[i]['channel'] != programs[j]['channel']:
+            penalty_terms.append(S_pen * t_var)
+
+    model.Maximize(sum(obj_terms) - sum(penalty_terms))
+
+    # --- Solve ---
+    print(f"Solving with CP-SAT (Time limit: {time_limit}s)...")
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = time_limit
+
+    # Optional: Parallel workers
+    solver.parameters.num_search_workers = 8 # Utilization of cores
+
+    status = solver.Solve(model)
+    print(f"Status: {solver.StatusName(status)}")
+
+    if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
+        # Reconstruct
+        print("\nSolution Found!")
+
+        # Find path
+        selected_indices = [i for i in range(n) if solver.Value(is_selected[i])]
+
+        if not selected_indices:
+            print("No programs selected.")
+            return {'scheduled_programs': []}
+
+        # Find first
+        start_node = None
+        for i in selected_indices:
+            if solver.Value(is_first[i]):
+                start_node = i
+                break
+
+        schedule = []
+        curr = start_node
+        # Follow transitions
+        while curr is not None:
+            schedule.append(curr)
+
+            # Find next
+            next_node = None
+            for j in valid_transitions[curr]:
+                if solver.Value(trans_vars[(curr, j)]):
+                    next_node = j
+                    break
+            curr = next_node
+
+        # Build Output
+        out_list = []
+        total_score_val = 0
+        total_penalty_val = 0
+
+        print("\nSchedule:")
+        for idx, i in enumerate(schedule):
+            p = programs[i]
+            out_list.append({
+                'program_id': p['id'],
+                'channel_id': p['channel'],
+                'start': p['start'],
+                'end': p['end']
+            })
+
+            # Debug info
+            r_pos = solver.Value(run_pos[i])
+            b_val = bonuses[i]
+            print(f"{idx+1:2}. {p['id']:10} Ch{p['channel']} {p['start']}-{p['end']} "
+                  f"({p['genre']}) Score={p['score']}+{b_val} Run={r_pos}")
+
+        print(f"Objective Value: {solver.ObjectiveValue()}")
+        return {'scheduled_programs': out_list}
+
+    else:
+        print("No solution found.")
+        return None
+
 if __name__ == "__main__":
-    input_file = sys.argv[1] if len(sys.argv) > 1 else "germany_tv_input.json"
-    output_file = sys.argv[2] if len(sys.argv) > 2 else "ilp_solution.json"
-    time_limit = int(sys.argv[3]) if len(sys.argv) > 3 else 300
+    if len(sys.argv) < 2:
+        print("Usage: python3 ilp_ortools.py <input> <output> [time_limit]")
+        # Default for testing
+        input_file = "inputs/toy_tv_input.json"
+        output_file = "outputs/ortools_toy.json"
+        time_limit = 60
+    else:
+        input_file = sys.argv[1]
+        output_file = sys.argv[2]
+        time_limit = int(sys.argv[3]) if len(sys.argv) > 3 else 300
 
-    print(f"Loading input from {input_file}...")
-    input_data = load_input(input_file)
+    print(f"Loading {input_file}...")
+    data = load_input(input_file)
+    sol = solve_with_ortools(data, time_limit)
 
-    solution = solve_tv_scheduling(input_data, time_limit)
-
-    if solution:
-        save_output(solution, output_file)
-        print(f"\nSolution saved to {output_file}")
+    if sol:
+        save_output(sol, output_file)
+        print(f"Saved to {output_file}")

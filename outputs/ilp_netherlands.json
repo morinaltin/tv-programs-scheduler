@@ -67,8 +67,8 @@
             "end": 810
         },
         {
-            "program_id": "Net5_7",
-            "channel_id": 7,
+            "program_id": "NPO2_8",
+            "channel_id": 1,
             "start": 810,
             "end": 840
         },
@@ -127,15 +127,21 @@
             "end": 1170
         },
         {
-            "program_id": "RTL4_12",
-            "channel_id": 3,
+            "program_id": "RTL7_12",
+            "channel_id": 5,
             "start": 1170,
-            "end": 1260
+            "end": 1200
         },
         {
-            "program_id": "RTL4_13",
-            "channel_id": 3,
-            "start": 1260,
+            "program_id": "NPO1_12",
+            "channel_id": 0,
+            "start": 1200,
+            "end": 1320
+        },
+        {
+            "program_id": "NPO1_13",
+            "channel_id": 0,
+            "start": 1320,
             "end": 1350
         },
         {

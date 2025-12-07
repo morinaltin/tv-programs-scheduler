@@ -49,9 +49,15 @@
             "end": 750
         },
         {
-            "program_id": "KlanKosova_7",
-            "channel_id": 3,
-            "start": 750,
+            "program_id": "RTV21_4",
+            "channel_id": 5,
+            "start": 780,
+            "end": 810
+        },
+        {
+            "program_id": "RTV21_5",
+            "channel_id": 5,
+            "start": 810,
             "end": 840
         },
         {
