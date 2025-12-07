@@ -19,9 +19,21 @@
             "end": 90
         },
         {
-            "program_id": "ktv_6",
-            "channel_id": 5,
+            "program_id": "peace-tv_8",
+            "channel_id": 151,
             "start": 90,
+            "end": 120
+        },
+        {
+            "program_id": "tv-arta_6",
+            "channel_id": 135,
+            "start": 120,
+            "end": 150
+        },
+        {
+            "program_id": "trt-world_11",
+            "channel_id": 102,
+            "start": 150,
             "end": 180
         },
         {
@@ -253,8 +265,8 @@
             "end": 1320
         },
         {
-            "program_id": "euro-d_13",
-            "channel_id": 86,
+            "program_id": "peace-tv_2",
+            "channel_id": 151,
             "start": 1320,
             "end": 1350
         },

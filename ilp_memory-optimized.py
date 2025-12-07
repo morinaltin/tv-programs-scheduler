@@ -5,8 +5,9 @@ High-performance scheduler using Constraint Programming.
 Improvements:
 - Uses Interval Variables (NoOverlap constraint)
 - Uses Boolean logic for sequencing
-- STRICT GENRE CONSTRAINT: Gaps do NOT reset the run count.
-- TERMINATION PENALTY RESTORED: Solver must avoid partial programs if penalty is high.
+- STRICT GENRE CONSTRAINT & PENALTY logic.
+- MEMORY OPTIMIZATION: Prunes transition graph to nearest 100 neighbors.
+- EXECUTION TIMER added.
 
 Usage:
     python3 ilp.py <input_file> <output_file> <time_limit_seconds>
@@ -28,13 +29,14 @@ def save_output(output_data, filepath):
 
 def solve_with_ortools(input_data, time_limit=300):
     start_time = time.time()
+    
     # --- Data Parsing ---
     O = input_data['opening_time']
     E = input_data['closing_time']
     D = input_data['min_duration']
     R = input_data['max_consecutive_genre']
     S_pen = input_data['switch_penalty']
-    T_pen = input_data['termination_penalty'] 
+    T_pen = input_data.get('termination_penalty', 0) # Use 0 if missing, but input usually has it
     
     priority_blocks = input_data.get('priority_blocks', [])
     time_prefs = input_data.get('time_preferences', [])
@@ -80,14 +82,6 @@ def solve_with_ortools(input_data, time_limit=300):
                     continue
                 
                 net_score = prog['score']
-                
-                # Penalty Logic Restored
-                # The validator shows "Early End: -100" but input usually has smaller values.
-                # However, usually "Early End" implies a penalty per MISSING minute or fixed?
-                # The original PDF formula: "Late Start" or "Early Termination".
-                # Standard interpretation: Fixed penalty T_pen if start/end differs.
-                # Let's apply T_pen if start > prog['start'] OR end < prog['end'].
-                
                 if w_start > prog['start']: net_score -= T_pen
                 if w_end < prog['end']: net_score -= T_pen
 
@@ -104,6 +98,10 @@ def solve_with_ortools(input_data, time_limit=300):
 
     n = len(programs)
     print(f"Programs after filtering: {n}")
+    
+    # Sort programs by start time to help with neighbor finding
+    # (Note: 'idx' property in dict is now outdated relative to list position, but we don't use it for logic)
+    programs.sort(key=lambda x: x['start'])
     
     bonuses = [0] * n
     for i in range(n):
@@ -132,17 +130,43 @@ def solve_with_ortools(input_data, time_limit=300):
 
     model.AddNoOverlap(intervals)
 
+    # --- Sequencing with Pruning ---
     valid_transitions = defaultdict(list)
     valid_incoming = defaultdict(list)
     possible_trans_indices = []
-
+    
+    # NEIGHBOR LIMIT: Only consider the nearest K possible successors for each program.
+    # This prevents O(N^2) memory explosion.
+    # K=100 is generous for 15 channels (covers ~3-4 hours of alternatives).
+    K_NEIGHBORS = 100
+    
     for i in range(n):
-        for j in range(n):
-            if i == j: continue
+        # Programs are sorted by start time.
+        # Potential successors must start >= programs[i].end
+        # We can scan forward from i.
+        
+        count = 0
+        # Optimization: Use binary search or careful scanning?
+        # Since they are sorted by 'start', valid successors are further down the list.
+        # However, checking every j > i is still O(N^2).
+        # But we only Keep K.
+        # Better: iterate j from i+1.
+        
+        for j in range(i + 1, n):
             if programs[j]['start'] >= programs[i]['end']:
                 valid_transitions[i].append(j)
                 valid_incoming[j].append(i)
                 possible_trans_indices.append((i, j))
+                count += 1
+                if count >= K_NEIGHBORS:
+                    break
+        
+        # Note: If programs are not strictly sorted by start (they are), this logic is fine.
+        # If we need "backwards" links for incoming, strictly "neighbors" logic works symmetrically?
+        # No, flow logic needs all valid edges.
+        # By limiting outgoing to K, we limit total edges to N*K.
+    
+    print(f"Transition variables created: {len(possible_trans_indices)}")
 
     trans_vars = {}
     for i, j in possible_trans_indices:
@@ -186,6 +210,7 @@ def solve_with_ortools(input_data, time_limit=300):
             
     model.Maximize(sum(obj_terms) - sum(penalty_terms))
 
+    print("Building model complete. Solving...")
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit
     solver.parameters.num_search_workers = 8 
@@ -196,7 +221,7 @@ def solve_with_ortools(input_data, time_limit=300):
     end_time = time.time()
     elapsed = end_time - start_time
     print(f"Total Execution Time: {elapsed:.2f} seconds")
-    
+
     if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
         selected_indices = [i for i in range(n) if solver.Value(is_selected[i])]
         
@@ -248,8 +273,14 @@ if __name__ == "__main__":
         time_limit = int(sys.argv[3]) if len(sys.argv) > 3 else 300
         
         print(f"Loading {input_file}...")
-        data = load_input(input_file)
-        sol = solve_with_ortools(data, time_limit)
-        if sol:
-            save_output(sol, output_file)
-            print(f"Saved to {output_file}")
+        try:
+            data = load_input(input_file)
+            sol = solve_with_ortools(data, time_limit)
+            if sol:
+                save_output(sol, output_file)
+                print(f"Saved to {output_file}")
+        except Exception as e:
+            print(f"\nERROR: {e}")
+            import traceback
+            traceback.print_exc()
+
