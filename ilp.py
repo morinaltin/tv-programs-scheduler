@@ -6,10 +6,12 @@ Improvements:
 - Uses Interval Variables (NoOverlap constraint)
 - Uses Boolean logic for sequencing
 - STRICT GENRE CONSTRAINT: Gaps do NOT reset the run count.
-- TERMINATION PENALTY RESTORED: Solver must avoid partial programs if penalty is high.
+- TERMINATION PENALTY RESTORED: Dynamic calculation based on original boundaries.
+- SCORE CORRECTION: Prevents double-counting of base scores for split programs.
 
 Usage:
     python3 ilp.py <input_file> <output_file> <time_limit_seconds>
+    ./.venv/bin/python3.11 ilp.py inputs/toy_tv_input.json outputs/ilp_toy.json 7200
 """
 
 import sys
@@ -41,6 +43,8 @@ def solve_with_ortools(input_data, time_limit=300):
     channels_data = input_data['channels']
 
     programs = []
+    # Key: program_id, Value: {'score': base_score, 'indices': []}
+    prog_id_map = {} 
     
     # Preprocessing
     for channel in channels_data:
@@ -75,21 +79,23 @@ def solve_with_ortools(input_data, time_limit=300):
                             next_candidates.append((f_end, c_end))
                 candidate_windows = next_candidates
 
+            if prog['program_id'] not in prog_id_map:
+                prog_id_map[prog['program_id']] = {
+                    'base_score': prog['score'],
+                    'indices': []
+                }
+
             for w_start, w_end in candidate_windows:
                 if (w_end - w_start) < D:
                     continue
                 
-                net_score = prog['score']
-                
-                # Penalty Logic Restored
-                # The validator shows "Early End: -100" but input usually has smaller values.
-                # However, usually "Early End" implies a penalty per MISSING minute or fixed?
-                # The original PDF formula: "Late Start" or "Early Termination".
-                # Standard interpretation: Fixed penalty T_pen if start/end differs.
-                # Let's apply T_pen if start > prog['start'] OR end < prog['end'].
-                
-                if w_start > prog['start']: net_score -= T_pen
-                if w_end < prog['end']: net_score -= T_pen
+                bonus = 0
+                for pref in time_prefs:
+                    if prog['genre'] == pref['preferred_genre']:
+                        overlap_start = max(w_start, pref['start'])
+                        overlap_end = min(w_end, pref['end'])
+                        if (overlap_end - overlap_start) >= D:
+                            bonus += pref['bonus']
 
                 programs.append({
                     'idx': len(programs),
@@ -99,22 +105,18 @@ def solve_with_ortools(input_data, time_limit=300):
                     'end': w_end,
                     'duration': w_end - w_start,
                     'genre': prog['genre'],
-                    'score': net_score
+                    'bonus': bonus,
+                    'original_start': prog['start'],
+                    'original_end': prog['end'],
+                    'is_start_node': (w_start == prog['start']),
+                    'is_end_node': (w_end == prog['end'])
                 })
+                
+                prog_id_map[prog['program_id']]['indices'].append(programs[-1]['idx'])
 
     n = len(programs)
     print(f"Programs after filtering: {n}")
     
-    bonuses = [0] * n
-    for i in range(n):
-        p = programs[i]
-        for pref in time_prefs:
-            if p['genre'] == pref['preferred_genre']:
-                overlap_start = max(p['start'], pref['start'])
-                overlap_end = min(p['end'], pref['end'])
-                if (overlap_end - overlap_start) >= D:
-                    bonuses[i] += pref['bonus']
-
     model = cp_model.CpModel()
 
     is_selected = [model.NewBoolVar(f"x_{i}") for i in range(n)]
@@ -180,9 +182,36 @@ def solve_with_ortools(input_data, time_limit=300):
                  penalty_terms.append(S_pen * t_var)
 
     obj_terms = []
+    
+    for pid, info in prog_id_map.items():
+        indices = info['indices']
+        if not indices:
+            continue
+            
+        is_present = model.NewBoolVar(f"present_{pid}")
+        model.AddMaxEquality(is_present, [is_selected[i] for i in indices])
+        
+        obj_terms.append(info['base_score'] * is_present)
+        
+        start_indices = [i for i in indices if programs[i]['is_start_node']]
+        if start_indices:
+            has_start = model.NewBoolVar(f"has_start_{pid}")
+            model.AddMaxEquality(has_start, [is_selected[i] for i in start_indices])
+            penalty_terms.append(T_pen * (is_present - has_start))
+        else:
+            penalty_terms.append(T_pen * is_present)
+            
+        end_indices = [i for i in indices if programs[i]['is_end_node']]
+        if end_indices:
+            has_end = model.NewBoolVar(f"has_end_{pid}")
+            model.AddMaxEquality(has_end, [is_selected[i] for i in end_indices])
+            penalty_terms.append(T_pen * (is_present - has_end))
+        else:
+            penalty_terms.append(T_pen * is_present)
+
     for i in range(n):
-        val = programs[i]['score'] + bonuses[i]
-        obj_terms.append(val * is_selected[i])
+        if programs[i]['bonus'] > 0:
+            obj_terms.append(programs[i]['bonus'] * is_selected[i])
             
     model.Maximize(sum(obj_terms) - sum(penalty_terms))
 
@@ -231,9 +260,9 @@ def solve_with_ortools(input_data, time_limit=300):
                 'end': p['end']
             })
             r_pos = solver.Value(run_pos[i])
-            b_val = bonuses[i]
+            b_val = p['bonus']
             print(f"{idx+1:2}. {p['id']:10} Ch{p['channel']} {p['start']}-{p['end']} "
-                  f"({p['genre']}) Score={p['score']}+{b_val} Run={r_pos}")
+                  f"({p['genre']}) Base={prog_id_map[p['id']]['base_score']} Bonus={b_val} Run={r_pos}")
 
         print(f"Objective Value: {solver.ObjectiveValue()}")
         return {'scheduled_programs': out_list}
