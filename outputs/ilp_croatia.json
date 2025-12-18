@@ -79,10 +79,22 @@
             "end": 810
         },
         {
+            "program_id": "HRT1_6",
+            "channel_id": 0,
+            "start": 810,
+            "end": 840
+        },
+        {
             "program_id": "Oxygen_7",
             "channel_id": 13,
             "start": 840,
             "end": 870
+        },
+        {
+            "program_id": "HRT1_6",
+            "channel_id": 0,
+            "start": 870,
+            "end": 900
         },
         {
             "program_id": "ArenaSport1_7",
@@ -112,6 +124,12 @@
             "program_id": "HRT2_13",
             "channel_id": 1,
             "start": 1050,
+            "end": 1080
+        },
+        {
+            "program_id": "HRT2_13",
+            "channel_id": 1,
+            "start": 1080,
             "end": 1110
         },
         {

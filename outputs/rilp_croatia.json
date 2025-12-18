@@ -1,20 +1,20 @@
 {
     "scheduled_programs": [
         {
-            "program_id": "N1_Hrvatska_1",
-            "channel_id": 9,
+            "program_id": "HBO_Adria_1",
+            "channel_id": 14,
             "start": 360,
             "end": 390
         },
         {
-            "program_id": "SportKlub2_2",
-            "channel_id": 6,
+            "program_id": "HRT1_1",
+            "channel_id": 0,
             "start": 390,
             "end": 420
         },
         {
-            "program_id": "RTL_Life_2",
-            "channel_id": 11,
+            "program_id": "RTL_Hrvatska_1",
+            "channel_id": 4,
             "start": 420,
             "end": 450
         },
@@ -25,27 +25,39 @@
             "end": 480
         },
         {
-            "program_id": "ArenaSport2_2",
-            "channel_id": 8,
+            "program_id": "NovaTV_4",
+            "channel_id": 3,
             "start": 480,
             "end": 510
         },
         {
-            "program_id": "N1_Hrvatska_3",
-            "channel_id": 9,
+            "program_id": "RTL_Life_4",
+            "channel_id": 11,
             "start": 510,
             "end": 540
         },
         {
-            "program_id": "HBO_Adria_3",
-            "channel_id": 14,
+            "program_id": "HRT2_3",
+            "channel_id": 1,
             "start": 540,
+            "end": 570
+        },
+        {
+            "program_id": "ArenaSport2_5",
+            "channel_id": 8,
+            "start": 570,
             "end": 600
         },
         {
-            "program_id": "N1_Hrvatska_5",
-            "channel_id": 9,
+            "program_id": "CMC_5",
+            "channel_id": 10,
             "start": 600,
+            "end": 630
+        },
+        {
+            "program_id": "Oxygen_5",
+            "channel_id": 13,
+            "start": 630,
             "end": 660
         },
         {
@@ -55,14 +67,14 @@
             "end": 690
         },
         {
-            "program_id": "HRT2_6",
-            "channel_id": 1,
+            "program_id": "RTL_Life_6",
+            "channel_id": 11,
             "start": 690,
             "end": 720
         },
         {
-            "program_id": "HRT2_7",
-            "channel_id": 1,
+            "program_id": "HRT1_5",
+            "channel_id": 0,
             "start": 720,
             "end": 750
         },
@@ -79,51 +91,87 @@
             "end": 810
         },
         {
-            "program_id": "RTL_Hrvatska_5",
-            "channel_id": 4,
+            "program_id": "CMC_7",
+            "channel_id": 10,
             "start": 810,
+            "end": 840
+        },
+        {
+            "program_id": "RTL_Life_7",
+            "channel_id": 11,
+            "start": 840,
             "end": 870
         },
         {
             "program_id": "NovaTV_9",
             "channel_id": 3,
             "start": 870,
+            "end": 900
+        },
+        {
+            "program_id": "ArenaSport1_7",
+            "channel_id": 7,
+            "start": 900,
             "end": 930
         },
         {
-            "program_id": "SportKlub2_9",
-            "channel_id": 6,
+            "program_id": "DomaTV_8",
+            "channel_id": 12,
             "start": 930,
             "end": 960
         },
         {
-            "program_id": "SportKlub2_10",
-            "channel_id": 6,
+            "program_id": "SportKlub1_7",
+            "channel_id": 5,
             "start": 960,
             "end": 990
         },
         {
-            "program_id": "HRT1_8",
-            "channel_id": 0,
+            "program_id": "SportKlub2_11",
+            "channel_id": 6,
             "start": 990,
+            "end": 1020
+        },
+        {
+            "program_id": "SportKlub1_8",
+            "channel_id": 5,
+            "start": 1020,
             "end": 1050
         },
         {
-            "program_id": "HRT2_13",
-            "channel_id": 1,
+            "program_id": "DomaTV_9",
+            "channel_id": 12,
             "start": 1050,
+            "end": 1080
+        },
+        {
+            "program_id": "CMC_11",
+            "channel_id": 10,
+            "start": 1080,
             "end": 1110
+        },
+        {
+            "program_id": "HRT3_9",
+            "channel_id": 2,
+            "start": 1110,
+            "end": 1140
         },
         {
             "program_id": "HRT1_10",
             "channel_id": 0,
-            "start": 1110,
+            "start": 1140,
             "end": 1170
         },
         {
             "program_id": "HRT2_15",
             "channel_id": 1,
             "start": 1170,
+            "end": 1200
+        },
+        {
+            "program_id": "NovaTV_14",
+            "channel_id": 3,
+            "start": 1200,
             "end": 1230
         },
         {
@@ -133,8 +181,8 @@
             "end": 1260
         },
         {
-            "program_id": "CMC_13",
-            "channel_id": 10,
+            "program_id": "N1_Hrvatska_12",
+            "channel_id": 9,
             "start": 1260,
             "end": 1290
         },
@@ -142,11 +190,17 @@
             "program_id": "HBO_Adria_14",
             "channel_id": 14,
             "start": 1290,
+            "end": 1320
+        },
+        {
+            "program_id": "RTL_Hrvatska_11",
+            "channel_id": 4,
+            "start": 1320,
             "end": 1350
         },
         {
-            "program_id": "Oxygen_14",
-            "channel_id": 13,
+            "program_id": "RTL_Life_12",
+            "channel_id": 11,
             "start": 1350,
             "end": 1380
         }

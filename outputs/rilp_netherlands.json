@@ -7,44 +7,50 @@
             "end": 390
         },
         {
-            "program_id": "NPO3_2",
-            "channel_id": 2,
+            "program_id": "Euronews_1",
+            "channel_id": 11,
             "start": 390,
             "end": 420
         },
         {
-            "program_id": "Euronews_2",
-            "channel_id": 11,
+            "program_id": "NPO1_2",
+            "channel_id": 0,
             "start": 420,
             "end": 450
         },
         {
-            "program_id": "Canvas_2",
-            "channel_id": 10,
+            "program_id": "RTL4_3",
+            "channel_id": 3,
             "start": 450,
             "end": 480
         },
         {
-            "program_id": "NPO2_4",
-            "channel_id": 1,
+            "program_id": "NPO1_3",
+            "channel_id": 0,
             "start": 480,
             "end": 510
         },
         {
+            "program_id": "NPO3_4",
+            "channel_id": 2,
+            "start": 510,
+            "end": 540
+        },
+        {
             "program_id": "RTL5_3",
             "channel_id": 4,
-            "start": 510,
+            "start": 540,
             "end": 570
         },
         {
-            "program_id": "Canvas_4",
-            "channel_id": 10,
+            "program_id": "Net5_2",
+            "channel_id": 7,
             "start": 570,
             "end": 600
         },
         {
-            "program_id": "Net5_3",
-            "channel_id": 7,
+            "program_id": "Veronica_3",
+            "channel_id": 8,
             "start": 600,
             "end": 630
         },
@@ -55,33 +61,57 @@
             "end": 660
         },
         {
+            "program_id": "NPO3_7",
+            "channel_id": 2,
+            "start": 660,
+            "end": 690
+        },
+        {
             "program_id": "RTL5_5",
             "channel_id": 4,
             "start": 690,
             "end": 720
         },
         {
-            "program_id": "Canvas_6",
-            "channel_id": 10,
+            "program_id": "NPO1_5",
+            "channel_id": 0,
+            "start": 720,
+            "end": 750
+        },
+        {
+            "program_id": "NPO2_7",
+            "channel_id": 1,
+            "start": 750,
+            "end": 780
+        },
+        {
+            "program_id": "Veronica_5",
+            "channel_id": 8,
             "start": 780,
             "end": 810
         },
         {
-            "program_id": "Canvas_7",
-            "channel_id": 10,
+            "program_id": "RTL7_7",
+            "channel_id": 5,
             "start": 810,
             "end": 840
         },
         {
-            "program_id": "NPO2_9",
-            "channel_id": 1,
+            "program_id": "NPO1_7",
+            "channel_id": 0,
             "start": 840,
             "end": 870
         },
         {
-            "program_id": "RTL5_8",
-            "channel_id": 4,
+            "program_id": "Net5_8",
+            "channel_id": 7,
             "start": 870,
+            "end": 900
+        },
+        {
+            "program_id": "RTL7_8",
+            "channel_id": 5,
+            "start": 900,
             "end": 930
         },
         {
@@ -97,46 +127,64 @@
             "end": 990
         },
         {
-            "program_id": "Euronews_8",
-            "channel_id": 11,
+            "program_id": "Net5_10",
+            "channel_id": 7,
             "start": 990,
             "end": 1020
         },
         {
-            "program_id": "SBS6_9",
-            "channel_id": 6,
+            "program_id": "NPO1_10",
+            "channel_id": 0,
             "start": 1020,
+            "end": 1050
+        },
+        {
+            "program_id": "NPO2_12",
+            "channel_id": 1,
+            "start": 1050,
             "end": 1080
         },
         {
-            "program_id": "RTL7_10",
-            "channel_id": 5,
+            "program_id": "Canvas_12",
+            "channel_id": 10,
             "start": 1080,
             "end": 1110
         },
         {
-            "program_id": "Net5_12",
-            "channel_id": 7,
+            "program_id": "NPO2_13",
+            "channel_id": 1,
             "start": 1110,
             "end": 1140
         },
         {
-            "program_id": "Canvas_13",
-            "channel_id": 10,
+            "program_id": "NPO1_11",
+            "channel_id": 0,
             "start": 1140,
             "end": 1170
         },
         {
-            "program_id": "RTL7_12",
-            "channel_id": 5,
+            "program_id": "RTL5_11",
+            "channel_id": 4,
             "start": 1170,
             "end": 1200
         },
         {
+            "program_id": "RTL4_12",
+            "channel_id": 3,
+            "start": 1200,
+            "end": 1230
+        },
+        {
             "program_id": "NPO1_12",
             "channel_id": 0,
-            "start": 1200,
-            "end": 1320
+            "start": 1230,
+            "end": 1260
+        },
+        {
+            "program_id": "RTL4_13",
+            "channel_id": 3,
+            "start": 1260,
+            "end": 1290
         },
         {
             "program_id": "NPO1_13",
@@ -145,8 +193,8 @@
             "end": 1350
         },
         {
-            "program_id": "NPO2_18",
-            "channel_id": 1,
+            "program_id": "NPO1_14",
+            "channel_id": 0,
             "start": 1350,
             "end": 1380
         },
@@ -154,6 +202,12 @@
             "program_id": "Canvas_19",
             "channel_id": 10,
             "start": 1380,
+            "end": 1410
+        },
+        {
+            "program_id": "Net5_17",
+            "channel_id": 7,
+            "start": 1410,
             "end": 1440
         }
     ]

@@ -4,12 +4,24 @@
             "program_id": "n1",
             "channel_id": 0,
             "start": 540,
+            "end": 570
+        },
+        {
+            "program_id": "n1",
+            "channel_id": 0,
+            "start": 570,
             "end": 600
         },
         {
             "program_id": "n2",
             "channel_id": 0,
             "start": 600,
+            "end": 630
+        },
+        {
+            "program_id": "n2",
+            "channel_id": 0,
+            "start": 630,
             "end": 660
         },
         {
