@@ -1,20 +1,20 @@
 {
     "scheduled_programs": [
         {
-            "program_id": "HBO_Adria_1",
-            "channel_id": 14,
+            "program_id": "HRT1_1",
+            "channel_id": 0,
             "start": 360,
             "end": 390
         },
         {
-            "program_id": "HRT1_1",
-            "channel_id": 0,
+            "program_id": "RTL_Hrvatska_1",
+            "channel_id": 4,
             "start": 390,
             "end": 420
         },
         {
-            "program_id": "RTL_Hrvatska_1",
-            "channel_id": 4,
+            "program_id": "HBO_Adria_1",
+            "channel_id": 14,
             "start": 420,
             "end": 450
         },
@@ -31,14 +31,14 @@
             "end": 510
         },
         {
-            "program_id": "RTL_Life_4",
-            "channel_id": 11,
+            "program_id": "HRT2_3",
+            "channel_id": 1,
             "start": 510,
             "end": 540
         },
         {
-            "program_id": "HRT2_3",
-            "channel_id": 1,
+            "program_id": "RTL_Life_4",
+            "channel_id": 11,
             "start": 540,
             "end": 570
         },
