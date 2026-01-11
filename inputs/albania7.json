@@ -1,0 +1,834 @@
+{
+  "opening_time": 0,
+  "closing_time": 870,
+  "min_duration": 30,
+  "max_consecutive_genre": 2,
+  "channels_count": 24,
+  "switch_penalty": 5,
+  "termination_penalty": 10,
+  "time_preferences": [
+    {
+      "start": 0,
+      "end": 60,
+      "preferred_genre": "europetv",
+      "bonus": 100
+    },
+    {
+      "start": 0,
+      "end": 60,
+      "preferred_genre": "newstv",
+      "bonus": 100
+    },
+    {
+      "start": 0,
+      "end": 60,
+      "preferred_genre": "children's",
+      "bonus": 83
+    },
+    {
+      "start": 0,
+      "end": 60,
+      "preferred_genre": "documentary",
+      "bonus": 53
+    },
+    {
+      "start": 0,
+      "end": 60,
+      "preferred_genre": "sportstv",
+      "bonus": 45
+    },
+    {
+      "start": 60,
+      "end": 120,
+      "preferred_genre": "europetv",
+      "bonus": 94
+    },
+    {
+      "start": 60,
+      "end": 120,
+      "preferred_genre": "newstv",
+      "bonus": 66
+    },
+    {
+      "start": 60,
+      "end": 120,
+      "preferred_genre": "documentary",
+      "bonus": 60
+    },
+    {
+      "start": 60,
+      "end": 120,
+      "preferred_genre": "sportstv",
+      "bonus": 45
+    },
+    {
+      "start": 120,
+      "end": 180,
+      "preferred_genre": "europetv",
+      "bonus": 86
+    },
+    {
+      "start": 120,
+      "end": 180,
+      "preferred_genre": "documentary",
+      "bonus": 57
+    },
+    {
+      "start": 120,
+      "end": 180,
+      "preferred_genre": "newstv",
+      "bonus": 46
+    },
+    {
+      "start": 180,
+      "end": 240,
+      "preferred_genre": "sportstv",
+      "bonus": 48
+    },
+    {
+      "start": 180,
+      "end": 240,
+      "preferred_genre": "europetv",
+      "bonus": 38
+    },
+    {
+      "start": 300,
+      "end": 360,
+      "preferred_genre": "europetv",
+      "bonus": 49
+    },
+    {
+      "start": 300,
+      "end": 360,
+      "preferred_genre": "newstv",
+      "bonus": 40
+    },
+    {
+      "start": 360,
+      "end": 420,
+      "preferred_genre": "albanian",
+      "bonus": 37
+    },
+    {
+      "start": 360,
+      "end": 420,
+      "preferred_genre": "newstv",
+      "bonus": 36
+    },
+    {
+      "start": 600,
+      "end": 660,
+      "preferred_genre": "dvb-c",
+      "bonus": 39
+    },
+    {
+      "start": 840,
+      "end": 900,
+      "preferred_genre": "dvb-c",
+      "bonus": 39
+    }
+  ],
+  "priority_blocks": [
+    {
+      "start": 0,
+      "end": 60,
+      "allowed_channels": [
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        5,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        17,
+        17,
+        17,
+        18,
+        18,
+        18,
+        19,
+        19,
+        20,
+        21,
+        21,
+        22,
+        22,
+        22,
+        23,
+        23,
+        23
+      ]
+    },
+    {
+      "start": 60,
+      "end": 120,
+      "allowed_channels": [
+        2,
+        2,
+        5,
+        7,
+        8,
+        9,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        16,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "start": 120,
+      "end": 180,
+      "allowed_channels": [
+        2,
+        5,
+        6,
+        6,
+        6,
+        8,
+        12,
+        13,
+        14,
+        15,
+        20
+      ]
+    }
+  ],
+  "channels": [
+    {
+      "channel_id": 0,
+      "programs": [
+        {
+          "program_id": "Të shpallet",
+          "start": 300,
+          "end": 330,
+          "genre": "albanian",
+          "score": 71
+        },
+        {
+          "program_id": "Të shpallet_2",
+          "start": 360,
+          "end": 390,
+          "genre": "albanian",
+          "score": 50
+        },
+        {
+          "program_id": "Të shpallet_3",
+          "start": 600,
+          "end": 630,
+          "genre": "albanian",
+          "score": 56
+        }
+      ]
+    },
+    {
+      "channel_id": 1,
+      "programs": [
+        {
+          "program_id": "Të shpallet_1",
+          "start": 360,
+          "end": 390,
+          "genre": "dvb-c",
+          "score": 69
+        },
+        {
+          "program_id": "Të shpallet_2_1",
+          "start": 600,
+          "end": 630,
+          "genre": "dvb-c",
+          "score": 72
+        },
+        {
+          "program_id": "Të shpallet_3_1",
+          "start": 840,
+          "end": 870,
+          "genre": "dvb-c",
+          "score": 55
+        }
+      ]
+    },
+    {
+      "channel_id": 2,
+      "programs": [
+        {
+          "program_id": "Che tempo fa",
+          "start": 90,
+          "end": 120,
+          "genre": "europetv",
+          "score": 70
+        },
+        {
+          "program_id": "Ballando con le Stelle 2025",
+          "start": 95,
+          "end": 125,
+          "genre": "europetv",
+          "score": 63
+        },
+        {
+          "program_id": "Sottovoce",
+          "start": 160,
+          "end": 190,
+          "genre": "europetv",
+          "score": 72
+        }
+      ]
+    },
+    {
+      "channel_id": 3,
+      "programs": [
+        {
+          "program_id": "TG2 Storie. I racconti della settimana 2025",
+          "start": 0,
+          "end": 30,
+          "genre": "europetv",
+          "score": 63
+        },
+        {
+          "program_id": "Meteo 2",
+          "start": 48,
+          "end": 78,
+          "genre": "europetv",
+          "score": 77
+        },
+        {
+          "program_id": "TG2 Mizar",
+          "start": 55,
+          "end": 85,
+          "genre": "europetv",
+          "score": 57
+        }
+      ]
+    },
+    {
+      "channel_id": 4,
+      "programs": [
+        {
+          "program_id": "TG3 Mondo",
+          "start": 0,
+          "end": 30,
+          "genre": "europetv",
+          "score": 67
+        },
+        {
+          "program_id": "Tg3 Agenda Del Mondo",
+          "start": 25,
+          "end": 55,
+          "genre": "europetv",
+          "score": 72
+        },
+        {
+          "program_id": "Meteo 3",
+          "start": 30,
+          "end": 60,
+          "genre": "europetv",
+          "score": 64
+        }
+      ]
+    },
+    {
+      "channel_id": 5,
+      "programs": [
+        {
+          "program_id": "Tg5 speciale",
+          "start": 32,
+          "end": 62,
+          "genre": "europetv",
+          "score": 57
+        },
+        {
+          "program_id": "TG5",
+          "start": 89,
+          "end": 119,
+          "genre": "europetv",
+          "score": 64
+        },
+        {
+          "program_id": "Il tredicesimo apostolo - Il prescelto",
+          "start": 134,
+          "end": 164,
+          "genre": "europetv",
+          "score": 79
+        }
+      ]
+    },
+    {
+      "channel_id": 6,
+      "programs": [
+        {
+          "program_id": "Studio aperto - la giornata",
+          "start": 130,
+          "end": 160,
+          "genre": "europetv",
+          "score": 85
+        },
+        {
+          "program_id": "Sport mediaset - la giornata i1",
+          "start": 142,
+          "end": 172,
+          "genre": "europetv",
+          "score": 75
+        },
+        {
+          "program_id": "E-Planet",
+          "start": 162,
+          "end": 192,
+          "genre": "europetv",
+          "score": 59
+        }
+      ]
+    },
+    {
+      "channel_id": 7,
+      "programs": [
+        {
+          "program_id": "Top Gun: Maverick",
+          "start": 60,
+          "end": 90,
+          "genre": "europetv",
+          "score": 68
+        },
+        {
+          "program_id": "Knight and Day",
+          "start": 185,
+          "end": 215,
+          "genre": "europetv",
+          "score": 86
+        },
+        {
+          "program_id": "Der Blaulicht Report",
+          "start": 340,
+          "end": 370,
+          "genre": "europetv",
+          "score": 76
+        }
+      ]
+    },
+    {
+      "channel_id": 8,
+      "programs": [
+        {
+          "program_id": "Shaun of the Dead",
+          "start": 65,
+          "end": 95,
+          "genre": "europetv",
+          "score": 71
+        },
+        {
+          "program_id": "Hot Fuzz - Zwei abgewichste Profis",
+          "start": 175,
+          "end": 205,
+          "genre": "europetv",
+          "score": 75
+        },
+        {
+          "program_id": "X-Factor: Das Unfassbare",
+          "start": 310,
+          "end": 340,
+          "genre": "europetv",
+          "score": 66
+        }
+      ]
+    },
+    {
+      "channel_id": 9,
+      "programs": [
+        {
+          "program_id": "Die tödlichsten Schlangen der Welt",
+          "start": 20,
+          "end": 50,
+          "genre": "europetv",
+          "score": 61
+        },
+        {
+          "program_id": "I.C.E. - Amerikas härtester Grenzschutz",
+          "start": 70,
+          "end": 100,
+          "genre": "europetv",
+          "score": 77
+        },
+        {
+          "program_id": "I.C.E. - Amerikas härtester Grenzschutz_3",
+          "start": 115,
+          "end": 145,
+          "genre": "europetv",
+          "score": 52
+        }
+      ]
+    },
+    {
+      "channel_id": 10,
+      "programs": [
+        {
+          "program_id": "Endurance Car Racing: 6 Hours of Fuji (Car Racing: 6 Hours of Fuji), Japan",
+          "start": 0,
+          "end": 30,
+          "genre": "sportstv",
+          "score": 67
+        },
+        {
+          "program_id": "UCI Road World Championships Kigali. Elite Men's Road Race, Kigali (267.5km) (Cycling: UCI Road World Championships Kigali), Ruanda, 2025",
+          "start": 90,
+          "end": 120,
+          "genre": "sportstv",
+          "score": 60
+        },
+        {
+          "program_id": "Equestrian: FEI Jumping World Cup Riyadh. Event 16 (Equestrian: FEI Jumping World Cup Riyadh), Saudo Arabija",
+          "start": 180,
+          "end": 210,
+          "genre": "sportstv",
+          "score": 87
+        }
+      ]
+    },
+    {
+      "channel_id": 11,
+      "programs": [
+        {
+          "program_id": "UCI Road World Championships Kigali. Elite Men's Road Race, Kigali (267.5km) (Cycling: UCI Road World Championships Kigali), Ruanda, 2025_1",
+          "start": 0,
+          "end": 30,
+          "genre": "sportstv",
+          "score": 60
+        },
+        {
+          "program_id": "Endurance Car Racing: 6 Hours of Fuji (Car Racing: 6 Hours of Fuji), Japan_2",
+          "start": 90,
+          "end": 120,
+          "genre": "sportstv",
+          "score": 58
+        },
+        {
+          "program_id": "UCI Road World Championships Kigali. Elite Men's Road Race, Kigali (267.5km) (Cycling: UCI Road World Championships Kigali), Ruanda, 2025_3",
+          "start": 180,
+          "end": 210,
+          "genre": "sportstv",
+          "score": 64
+        }
+      ]
+    },
+    {
+      "channel_id": 12,
+      "programs": [
+        {
+          "program_id": "Expedition Unknown",
+          "start": 0,
+          "end": 30,
+          "genre": "documentary",
+          "score": 75
+        },
+        {
+          "program_id": "Deadliest Catch",
+          "start": 60,
+          "end": 90,
+          "genre": "documentary",
+          "score": 67
+        },
+        {
+          "program_id": "Deadliest Catch_3",
+          "start": 120,
+          "end": 150,
+          "genre": "documentary",
+          "score": 83
+        }
+      ]
+    },
+    {
+      "channel_id": 13,
+      "programs": [
+        {
+          "program_id": "Curse of the Bermuda Triangle",
+          "start": 0,
+          "end": 30,
+          "genre": "documentary",
+          "score": 75
+        },
+        {
+          "program_id": "In Search Of Monsters",
+          "start": 60,
+          "end": 90,
+          "genre": "documentary",
+          "score": 52
+        },
+        {
+          "program_id": "In Search Of Monsters_3",
+          "start": 120,
+          "end": 150,
+          "genre": "documentary",
+          "score": 88
+        }
+      ]
+    },
+    {
+      "channel_id": 14,
+      "programs": [
+        {
+          "program_id": "Tuez, vous êtes filmé !",
+          "start": 50,
+          "end": 80,
+          "genre": "documentary",
+          "score": 84
+        },
+        {
+          "program_id": "Tuez, vous êtes filmé !_2",
+          "start": 110,
+          "end": 140,
+          "genre": "documentary",
+          "score": 56
+        },
+        {
+          "program_id": "Tuez, vous êtes filmé !_3",
+          "start": 155,
+          "end": 185,
+          "genre": "documentary",
+          "score": 84
+        }
+      ]
+    },
+    {
+      "channel_id": 15,
+      "programs": [
+        {
+          "program_id": "RTSH 24 HD",
+          "start": 120,
+          "end": 150,
+          "genre": "newstv",
+          "score": 70
+        },
+        {
+          "program_id": "RTSH 24 HD_2",
+          "start": 360,
+          "end": 390,
+          "genre": "newstv",
+          "score": 51
+        },
+        {
+          "program_id": "RTSH 24 HD_3",
+          "start": 600,
+          "end": 630,
+          "genre": "newstv",
+          "score": 87
+        }
+      ]
+    },
+    {
+      "channel_id": 16,
+      "programs": [
+        {
+          "program_id": "Top News",
+          "start": 60,
+          "end": 90,
+          "genre": "newstv",
+          "score": 66
+        },
+        {
+          "program_id": "Top News_2",
+          "start": 300,
+          "end": 330,
+          "genre": "newstv",
+          "score": 75
+        },
+        {
+          "program_id": "Top News_3",
+          "start": 540,
+          "end": 570,
+          "genre": "newstv",
+          "score": 60
+        }
+      ]
+    },
+    {
+      "channel_id": 17,
+      "programs": [
+        {
+          "program_id": "News",
+          "start": 0,
+          "end": 30,
+          "genre": "newstv",
+          "score": 52
+        },
+        {
+          "program_id": "Meteo",
+          "start": 26,
+          "end": 56,
+          "genre": "newstv",
+          "score": 72
+        },
+        {
+          "program_id": "TG notte",
+          "start": 30,
+          "end": 60,
+          "genre": "newstv",
+          "score": 67
+        }
+      ]
+    },
+    {
+      "channel_id": 18,
+      "programs": [
+        {
+          "program_id": "5 Minutes",
+          "start": 0,
+          "end": 30,
+          "genre": "newstv",
+          "score": 81
+        },
+        {
+          "program_id": "Brussels, My Love?",
+          "start": 5,
+          "end": 35,
+          "genre": "newstv",
+          "score": 56
+        },
+        {
+          "program_id": "5 Minutes_3",
+          "start": 30,
+          "end": 60,
+          "genre": "newstv",
+          "score": 83
+        }
+      ]
+    },
+    {
+      "channel_id": 19,
+      "programs": [
+        {
+          "program_id": "BBC News (BBC News), United Kingdom, 2025",
+          "start": 0,
+          "end": 30,
+          "genre": "newstv",
+          "score": 84
+        },
+        {
+          "program_id": "Talking Business (Talking Business), Biography, United Kingdom, 2025",
+          "start": 30,
+          "end": 60,
+          "genre": "newstv",
+          "score": 62
+        },
+        {
+          "program_id": "BBC News (BBC News), United Kingdom, 2025_3",
+          "start": 60,
+          "end": 90,
+          "genre": "newstv",
+          "score": 82
+        }
+      ]
+    },
+    {
+      "channel_id": 20,
+      "programs": [
+        {
+          "program_id": "CNN Newsroom Saturday",
+          "start": 0,
+          "end": 30,
+          "genre": "newstv",
+          "score": 54
+        },
+        {
+          "program_id": "CNN Newsroom Saturday_2",
+          "start": 60,
+          "end": 90,
+          "genre": "newstv",
+          "score": 62
+        },
+        {
+          "program_id": "Smerconish",
+          "start": 120,
+          "end": 150,
+          "genre": "newstv",
+          "score": 81
+        }
+      ]
+    },
+    {
+      "channel_id": 21,
+      "programs": [
+        {
+          "program_id": "News_1",
+          "start": 0,
+          "end": 30,
+          "genre": "newstv",
+          "score": 88
+        },
+        {
+          "program_id": "Risking It All",
+          "start": 30,
+          "end": 60,
+          "genre": "newstv",
+          "score": 90
+        },
+        {
+          "program_id": "News_3",
+          "start": 60,
+          "end": 90,
+          "genre": "newstv",
+          "score": 87
+        }
+      ]
+    },
+    {
+      "channel_id": 22,
+      "programs": [
+        {
+          "program_id": "The Smurfs (Les Schtroumpfs), Family, Animation, For children, Fantasy, Adventure, USA, France, Belgium, Germany, 2022",
+          "start": 0,
+          "end": 30,
+          "genre": "children's",
+          "score": 58
+        },
+        {
+          "program_id": "The Smurfs (Les Schtroumpfs), Family, Animation, For children, Fantasy, Adventure, USA, France, Belgium, Germany, 2022_2",
+          "start": 20,
+          "end": 50,
+          "genre": "children's",
+          "score": 50
+        },
+        {
+          "program_id": "The Casagrandes (The Casagrandes), Family, Animation, Action, Comedy, Fantasy, Adventure, USA, 2022",
+          "start": 45,
+          "end": 75,
+          "genre": "children's",
+          "score": 60
+        }
+      ]
+    },
+    {
+      "channel_id": 23,
+      "programs": [
+        {
+          "program_id": "Dreamy Nights (Dreamy Nights), For children, United Kingdom, 2021",
+          "start": 0,
+          "end": 30,
+          "genre": "children's",
+          "score": 60
+        },
+        {
+          "program_id": "Dreamy Nights (Dreamy Nights), For children, United Kingdom, 2021_2",
+          "start": 30,
+          "end": 60,
+          "genre": "children's",
+          "score": 83
+        },
+        {
+          "program_id": "Dreamy Nights (Dreamy Nights), For children, United Kingdom, 2021_3",
+          "start": 53,
+          "end": 83,
+          "genre": "children's",
+          "score": 63
+        }
+      ]
+    }
+  ]
+}

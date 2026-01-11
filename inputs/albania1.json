@@ -1,0 +1,862 @@
+{
+  "opening_time": 780,
+  "closing_time": 1350,
+  "min_duration": 30,
+  "max_consecutive_genre": 2,
+  "channels_count": 25,
+  "switch_penalty": 5,
+  "termination_penalty": 10,
+  "time_preferences": [
+    {
+      "start": 780,
+      "end": 840,
+      "preferred_genre": "newstv",
+      "bonus": 39
+    },
+    {
+      "start": 840,
+      "end": 900,
+      "preferred_genre": "europetv",
+      "bonus": 38
+    },
+    {
+      "start": 840,
+      "end": 900,
+      "preferred_genre": "sportstv",
+      "bonus": 38
+    },
+    {
+      "start": 900,
+      "end": 960,
+      "preferred_genre": "europetv",
+      "bonus": 96
+    },
+    {
+      "start": 900,
+      "end": 960,
+      "preferred_genre": "newstv",
+      "bonus": 85
+    },
+    {
+      "start": 900,
+      "end": 960,
+      "preferred_genre": "documentary",
+      "bonus": 52
+    },
+    {
+      "start": 900,
+      "end": 960,
+      "preferred_genre": "children's",
+      "bonus": 43
+    },
+    {
+      "start": 900,
+      "end": 960,
+      "preferred_genre": "sportstv",
+      "bonus": 40
+    },
+    {
+      "start": 960,
+      "end": 1020,
+      "preferred_genre": "europetv",
+      "bonus": 100
+    },
+    {
+      "start": 960,
+      "end": 1020,
+      "preferred_genre": "newstv",
+      "bonus": 93
+    },
+    {
+      "start": 960,
+      "end": 1020,
+      "preferred_genre": "children's",
+      "bonus": 69
+    },
+    {
+      "start": 960,
+      "end": 1020,
+      "preferred_genre": "documentary",
+      "bonus": 56
+    },
+    {
+      "start": 1020,
+      "end": 1080,
+      "preferred_genre": "newstv",
+      "bonus": 88
+    },
+    {
+      "start": 1020,
+      "end": 1080,
+      "preferred_genre": "europetv",
+      "bonus": 82
+    },
+    {
+      "start": 1020,
+      "end": 1080,
+      "preferred_genre": "documentary",
+      "bonus": 58
+    },
+    {
+      "start": 1020,
+      "end": 1080,
+      "preferred_genre": "sportstv",
+      "bonus": 46
+    },
+    {
+      "start": 1080,
+      "end": 1140,
+      "preferred_genre": "dvb-c",
+      "bonus": 40
+    },
+    {
+      "start": 1080,
+      "end": 1140,
+      "preferred_genre": "newstv",
+      "bonus": 39
+    },
+    {
+      "start": 1140,
+      "end": 1200,
+      "preferred_genre": "europetv",
+      "bonus": 39
+    },
+    {
+      "start": 1320,
+      "end": 1380,
+      "preferred_genre": "newstv",
+      "bonus": 39
+    }
+  ],
+  "priority_blocks": [
+    {
+      "start": 960,
+      "end": 1020,
+      "allowed_channels": [
+        2,
+        4,
+        5,
+        5,
+        6,
+        8,
+        8,
+        9,
+        9,
+        12,
+        13,
+        14,
+        17,
+        19,
+        19,
+        20,
+        20,
+        21,
+        22,
+        23,
+        23,
+        24,
+        24
+      ]
+    },
+    {
+      "start": 900,
+      "end": 960,
+      "allowed_channels": [
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        13,
+        14,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ]
+    },
+    {
+      "start": 1020,
+      "end": 1080,
+      "allowed_channels": [
+        2,
+        3,
+        3,
+        6,
+        7,
+        7,
+        10,
+        11,
+        12,
+        13,
+        14,
+        16,
+        17,
+        18,
+        18,
+        21,
+        22
+      ]
+    }
+  ],
+  "channels": [
+    {
+      "channel_id": 0,
+      "programs": [
+        {
+          "program_id": "Të shpallet",
+          "start": 840,
+          "end": 870,
+          "genre": "albanian",
+          "score": 87
+        },
+        {
+          "program_id": "Të shpallet_2",
+          "start": 1080,
+          "end": 1110,
+          "genre": "albanian",
+          "score": 78
+        },
+        {
+          "program_id": "Të shpallet_3",
+          "start": 1320,
+          "end": 1350,
+          "genre": "albanian",
+          "score": 67
+        }
+      ]
+    },
+    {
+      "channel_id": 1,
+      "programs": [
+        {
+          "program_id": "Të shpallet_1",
+          "start": 840,
+          "end": 870,
+          "genre": "dvb-c",
+          "score": 69
+        },
+        {
+          "program_id": "Të shpallet_2_1",
+          "start": 1080,
+          "end": 1110,
+          "genre": "dvb-c",
+          "score": 82
+        },
+        {
+          "program_id": "Të shpallet_3_1",
+          "start": 1320,
+          "end": 1350,
+          "genre": "dvb-c",
+          "score": 62
+        }
+      ]
+    },
+    {
+      "channel_id": 2,
+      "programs": [
+        {
+          "program_id": "Il paradiso delle signore - Stag. 10 Ep. 37 - Episodio 37",
+          "start": 930,
+          "end": 960,
+          "genre": "europetv",
+          "score": 53
+        },
+        {
+          "program_id": "Tg1",
+          "start": 975,
+          "end": 1005,
+          "genre": "europetv",
+          "score": 63
+        },
+        {
+          "program_id": "Vita in diretta - Stag. 2025 - Puntata del 28/10/2025",
+          "start": 1060,
+          "end": 1090,
+          "genre": "europetv",
+          "score": 54
+        }
+      ]
+    },
+    {
+      "channel_id": 3,
+      "programs": [
+        {
+          "program_id": "BellaMa' 2025",
+          "start": 925,
+          "end": 955,
+          "genre": "europetv",
+          "score": 78
+        },
+        {
+          "program_id": "La Porta Magica - Stag. 2025 - Puntata del 28/10/2025",
+          "start": 1020,
+          "end": 1050,
+          "genre": "europetv",
+          "score": 60
+        },
+        {
+          "program_id": "Tg Parlamento",
+          "start": 1055,
+          "end": 1085,
+          "genre": "europetv",
+          "score": 89
+        }
+      ]
+    },
+    {
+      "channel_id": 4,
+      "programs": [
+        {
+          "program_id": "Montagne di energia",
+          "start": 925,
+          "end": 955,
+          "genre": "europetv",
+          "score": 53
+        },
+        {
+          "program_id": "Geo - Stag. 2025 - Puntata del 28/10/2025",
+          "start": 980,
+          "end": 1010,
+          "genre": "europetv",
+          "score": 90
+        },
+        {
+          "program_id": "Idefix e gli Irriducibili 1",
+          "start": 1140,
+          "end": 1170,
+          "genre": "europetv",
+          "score": 84
+        }
+      ]
+    },
+    {
+      "channel_id": 5,
+      "programs": [
+        {
+          "program_id": "Uomini e donne",
+          "start": 885,
+          "end": 915,
+          "genre": "europetv",
+          "score": 76
+        },
+        {
+          "program_id": "La forza di una donna - PrimaTv",
+          "start": 966,
+          "end": 996,
+          "genre": "europetv",
+          "score": 74
+        },
+        {
+          "program_id": "Amici di Maria - DT",
+          "start": 985,
+          "end": 1015,
+          "genre": "europetv",
+          "score": 55
+        }
+      ]
+    },
+    {
+      "channel_id": 6,
+      "programs": [
+        {
+          "program_id": "NCIS: Los Angeles",
+          "start": 919,
+          "end": 949,
+          "genre": "europetv",
+          "score": 62
+        },
+        {
+          "program_id": "NCIS: Los Angeles_2",
+          "start": 980,
+          "end": 1010,
+          "genre": "europetv",
+          "score": 73
+        },
+        {
+          "program_id": "The Mentalist",
+          "start": 1040,
+          "end": 1070,
+          "genre": "europetv",
+          "score": 64
+        }
+      ]
+    },
+    {
+      "channel_id": 7,
+      "programs": [
+        {
+          "program_id": "Ulrich Wetzel - Das Strafgericht",
+          "start": 955,
+          "end": 985,
+          "genre": "europetv",
+          "score": 61
+        },
+        {
+          "program_id": "Der Blaulicht Report - Die neuen Einsätze",
+          "start": 1020,
+          "end": 1050,
+          "genre": "europetv",
+          "score": 50
+        },
+        {
+          "program_id": "Unter uns",
+          "start": 1050,
+          "end": 1080,
+          "genre": "europetv",
+          "score": 85
+        }
+      ]
+    },
+    {
+      "channel_id": 8,
+      "programs": [
+        {
+          "program_id": "Hartz Rot Gold",
+          "start": 900,
+          "end": 930,
+          "genre": "europetv",
+          "score": 50
+        },
+        {
+          "program_id": "RTLZWEI News",
+          "start": 960,
+          "end": 990,
+          "genre": "europetv",
+          "score": 90
+        },
+        {
+          "program_id": "RTLZWEI Wetter",
+          "start": 964,
+          "end": 994,
+          "genre": "europetv",
+          "score": 65
+        }
+      ]
+    },
+    {
+      "channel_id": 9,
+      "programs": [
+        {
+          "program_id": "ntv Trendbarometer",
+          "start": 940,
+          "end": 970,
+          "genre": "europetv",
+          "score": 82
+        },
+        {
+          "program_id": "Nachrichten",
+          "start": 960,
+          "end": 990,
+          "genre": "europetv",
+          "score": 78
+        },
+        {
+          "program_id": "Telebörse",
+          "start": 975,
+          "end": 1005,
+          "genre": "europetv",
+          "score": 87
+        }
+      ]
+    },
+    {
+      "channel_id": 10,
+      "programs": [
+        {
+          "program_id": "Cycling: Milano-Sanremo. Men | Pavia - San Remo (289km) (Cycling: Milano-Sanremo), Italy",
+          "start": 930,
+          "end": 960,
+          "genre": "sportstv",
+          "score": 88
+        },
+        {
+          "program_id": "Snooker: Xi'an Grand Prix. Final, Day 7, Second Session (Snooker: Xi'an Grand Prix), China, 2025",
+          "start": 1020,
+          "end": 1050,
+          "genre": "sportstv",
+          "score": 81
+        },
+        {
+          "program_id": "Endurance Autoraces: Qatar 1812km. Race (Car racing: FIA World Endurance Championship: Qatar 1812 km), Kataras",
+          "start": 1170,
+          "end": 1200,
+          "genre": "sportstv",
+          "score": 68
+        }
+      ]
+    },
+    {
+      "channel_id": 11,
+      "programs": [
+        {
+          "program_id": "Endurance Autoraces: Qatar 1812km. Race (Car racing: FIA World Endurance Championship: Qatar 1812 km), Kataras_1",
+          "start": 840,
+          "end": 870,
+          "genre": "sportstv",
+          "score": 61
+        },
+        {
+          "program_id": "Cycling: Strade Bianche (Men). Siena (213km) (Ciclismo Strade Bianche Uomini), Italy",
+          "start": 1020,
+          "end": 1050,
+          "genre": "sportstv",
+          "score": 53
+        },
+        {
+          "program_id": "Cycling: Milano-Sanremo. Men | Pavia - San Remo (289km) (Cycling: Milano-Sanremo), Italy_3",
+          "start": 1095,
+          "end": 1125,
+          "genre": "sportstv",
+          "score": 68
+        }
+      ]
+    },
+    {
+      "channel_id": 12,
+      "programs": [
+        {
+          "program_id": "Gold Divers",
+          "start": 900,
+          "end": 930,
+          "genre": "documentary",
+          "score": 56
+        },
+        {
+          "program_id": "Moonshiners",
+          "start": 960,
+          "end": 990,
+          "genre": "documentary",
+          "score": 88
+        },
+        {
+          "program_id": "Marooned with Ed Stafford",
+          "start": 1020,
+          "end": 1050,
+          "genre": "documentary",
+          "score": 76
+        }
+      ]
+    },
+    {
+      "channel_id": 13,
+      "programs": [
+        {
+          "program_id": "Cooper's Treasure",
+          "start": 900,
+          "end": 930,
+          "genre": "documentary",
+          "score": 55
+        },
+        {
+          "program_id": "How the Universe Works",
+          "start": 960,
+          "end": 990,
+          "genre": "documentary",
+          "score": 62
+        },
+        {
+          "program_id": "How the Universe Works_3",
+          "start": 1020,
+          "end": 1050,
+          "genre": "documentary",
+          "score": 89
+        }
+      ]
+    },
+    {
+      "channel_id": 14,
+      "programs": [
+        {
+          "program_id": "Eaux troubles",
+          "start": 900,
+          "end": 930,
+          "genre": "documentary",
+          "score": 58
+        },
+        {
+          "program_id": "Eaux troubles_2",
+          "start": 960,
+          "end": 990,
+          "genre": "documentary",
+          "score": 76
+        },
+        {
+          "program_id": "Connexions dangereuses",
+          "start": 1020,
+          "end": 1050,
+          "genre": "documentary",
+          "score": 73
+        }
+      ]
+    },
+    {
+      "channel_id": 15,
+      "programs": [
+        {
+          "program_id": "RTSH 24 HD",
+          "start": 840,
+          "end": 870,
+          "genre": "newstv",
+          "score": 75
+        },
+        {
+          "program_id": "RTSH 24 HD_2",
+          "start": 1080,
+          "end": 1110,
+          "genre": "newstv",
+          "score": 88
+        },
+        {
+          "program_id": "RTSH 24 HD_3",
+          "start": 1320,
+          "end": 1350,
+          "genre": "newstv",
+          "score": 81
+        }
+      ]
+    },
+    {
+      "channel_id": 16,
+      "programs": [
+        {
+          "program_id": "Top News",
+          "start": 780,
+          "end": 810,
+          "genre": "newstv",
+          "score": 65
+        },
+        {
+          "program_id": "Top News_2",
+          "start": 1020,
+          "end": 1050,
+          "genre": "newstv",
+          "score": 68
+        },
+        {
+          "program_id": "Top News_3",
+          "start": 1260,
+          "end": 1290,
+          "genre": "newstv",
+          "score": 77
+        }
+      ]
+    },
+    {
+      "channel_id": 17,
+      "programs": [
+        {
+          "program_id": "Kolo sreće",
+          "start": 910,
+          "end": 940,
+          "genre": "newstv",
+          "score": 80
+        },
+        {
+          "program_id": "Sinđelići",
+          "start": 965,
+          "end": 995,
+          "genre": "newstv",
+          "score": 50
+        },
+        {
+          "program_id": "Vesti B92",
+          "start": 1020,
+          "end": 1050,
+          "genre": "newstv",
+          "score": 78
+        }
+      ]
+    },
+    {
+      "channel_id": 18,
+      "programs": [
+        {
+          "program_id": "Pomeriggio 24 2025",
+          "start": 900,
+          "end": 930,
+          "genre": "newstv",
+          "score": 81
+        },
+        {
+          "program_id": "Titoli",
+          "start": 1020,
+          "end": 1050,
+          "genre": "newstv",
+          "score": 77
+        },
+        {
+          "program_id": "Sera 24 2025",
+          "start": 1050,
+          "end": 1080,
+          "genre": "newstv",
+          "score": 81
+        }
+      ]
+    },
+    {
+      "channel_id": 19,
+      "programs": [
+        {
+          "program_id": "Euronews Now",
+          "start": 930,
+          "end": 960,
+          "genre": "newstv",
+          "score": 89
+        },
+        {
+          "program_id": "Euronews Now_2",
+          "start": 960,
+          "end": 990,
+          "genre": "newstv",
+          "score": 77
+        },
+        {
+          "program_id": "Euronews Now_3",
+          "start": 976,
+          "end": 1006,
+          "genre": "newstv",
+          "score": 56
+        }
+      ]
+    },
+    {
+      "channel_id": 20,
+      "programs": [
+        {
+          "program_id": "BBC News Now (BBC News Now), United Kingdom, 2025",
+          "start": 930,
+          "end": 960,
+          "genre": "newstv",
+          "score": 74
+        },
+        {
+          "program_id": "Verified Live (Verified Live), United Kingdom, 2025",
+          "start": 960,
+          "end": 990,
+          "genre": "newstv",
+          "score": 69
+        },
+        {
+          "program_id": "Verified Live (Verified Live), United Kingdom, 2025_3",
+          "start": 990,
+          "end": 1020,
+          "genre": "newstv",
+          "score": 57
+        }
+      ]
+    },
+    {
+      "channel_id": 21,
+      "programs": [
+        {
+          "program_id": "World Sport",
+          "start": 945,
+          "end": 975,
+          "genre": "newstv",
+          "score": 77
+        },
+        {
+          "program_id": "Connect the World",
+          "start": 960,
+          "end": 990,
+          "genre": "newstv",
+          "score": 81
+        },
+        {
+          "program_id": "One World",
+          "start": 1020,
+          "end": 1050,
+          "genre": "newstv",
+          "score": 52
+        }
+      ]
+    },
+    {
+      "channel_id": 22,
+      "programs": [
+        {
+          "program_id": "The Stream",
+          "start": 930,
+          "end": 960,
+          "genre": "newstv",
+          "score": 70
+        },
+        {
+          "program_id": "Newshour",
+          "start": 960,
+          "end": 990,
+          "genre": "newstv",
+          "score": 55
+        },
+        {
+          "program_id": "News Live",
+          "start": 1020,
+          "end": 1050,
+          "genre": "newstv",
+          "score": 80
+        }
+      ]
+    },
+    {
+      "channel_id": 23,
+      "programs": [
+        {
+          "program_id": "The Fairly OddParents: A New Wish (The Fairly OddParents: A New Wish), Family, Comedy, Fantasy, Adventure, USA, 2024",
+          "start": 945,
+          "end": 975,
+          "genre": "children's",
+          "score": 79
+        },
+        {
+          "program_id": "The Casagrandes (The Casagrandes), Family, Animation, Action, Comedy, Fantasy, Adventure, USA, 2022",
+          "start": 970,
+          "end": 1000,
+          "genre": "children's",
+          "score": 64
+        },
+        {
+          "program_id": "The Casagrandes (The Casagrandes), Family, Animation, Action, Comedy, Fantasy, Adventure, USA, 2021",
+          "start": 995,
+          "end": 1025,
+          "genre": "children's",
+          "score": 75
+        }
+      ]
+    },
+    {
+      "channel_id": 24,
+      "programs": [
+        {
+          "program_id": "Art, Activity & Music Time (Art, Activity & Music Time), For children, Israel",
+          "start": 930,
+          "end": 960,
+          "genre": "children's",
+          "score": 74
+        },
+        {
+          "program_id": "Magical First Discoveries (Magical First Discoveries), For children, Israel",
+          "start": 960,
+          "end": 990,
+          "genre": "children's",
+          "score": 77
+        },
+        {
+          "program_id": "Imagination Playground (Imagination Playground), United Kingdom",
+          "start": 990,
+          "end": 1020,
+          "genre": "children's",
+          "score": 84
+        }
+      ]
+    }
+  ]
+}
