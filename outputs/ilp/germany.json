@@ -136,7 +136,7 @@
             "program_id": "P7_music_playlist",
             "channel_id": 3,
             "start": 1200,
-            "end": 1231
+            "end": 1230
         },
         {
             "program_id": "ZDF_night_doc",
@@ -147,13 +147,19 @@
         {
             "program_id": "ARD_late_show",
             "channel_id": 0,
-            "start": 1272,
+            "start": 1270,
             "end": 1320
         },
         {
             "program_id": "ARD_night_music",
             "channel_id": 0,
             "start": 1320,
+            "end": 1350
+        },
+        {
+            "program_id": "P7_midnight_news",
+            "channel_id": 3,
+            "start": 1350,
             "end": 1380
         }
     ]
