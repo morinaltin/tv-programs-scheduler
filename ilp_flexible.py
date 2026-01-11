@@ -119,6 +119,28 @@ def solve_with_flexible_ortools(input_data, time_limit=300):
     n = len(candidate_segments)
     print(f"Flexible Model: {n} candidate segments generated (Splits={MAX_SPLITS}).")
     
+    # Sort segments by start time to enable efficient neighbor pruning
+    candidate_segments.sort(key=lambda x: x['window_start'])
+    
+    # Re-map indices after sort
+    for idx, seg in enumerate(candidate_segments):
+        seg['new_idx'] = idx
+
+    # Update prog_id_map indices
+    for pid, info in prog_id_map.items():
+        new_indices = []
+        for old_idx in info['segment_indices']:
+            # Find where old_idx went - actually better to just rebuild map logic or store ref
+            # But since we just need the list of indices for this PID:
+            pass
+        # Rebuilding indices list is messy if we just sort. 
+        # Better: Re-scan candidate_segments to rebuild prog_id_map['segment_indices']
+        info['segment_indices'] = [] # Clear and rebuild
+        
+    for idx, seg in enumerate(candidate_segments):
+        prog_id_map[seg['id']]['segment_indices'].append(idx)
+        # Update internal ID if stored? No, just 'idx' used in list.
+
     model = cp_model.CpModel()
 
     # --- VARIABLES ---
@@ -145,9 +167,6 @@ def solve_with_flexible_ortools(input_data, time_limit=300):
         durations.append(d_var)
         
         # Create Interval Variable
-        # Note: If is_selected is false, duration is 0, start/end are irrelevant (but must stay in domain)
-        # We enforce: if selected, size >= D.
-        
         # Enforce size constraints
         model.Add(d_var == e_var - s_var)
         
@@ -155,15 +174,6 @@ def solve_with_flexible_ortools(input_data, time_limit=300):
         model.Add(d_var >= D).OnlyEnforceIf(is_selected[i])
         # If not selected -> Duration == 0
         model.Add(d_var == 0).OnlyEnforceIf(is_selected[i].Not())
-        
-        # Optional Interval for NoOverlap
-        # We use strict enforcement manually or use NewOptionalIntervalVar?
-        # NewOptionalIntervalVar needs `is_present` literal.
-        # If `is_selected` is False, the interval is "absent" and doesn't participate in NoOverlap.
-        
-        # CAUTION: For NewOptionalIntervalVar, 'start' and 'end' vars act as "value if present".
-        # If absent, they can be anything. 
-        # But we need them to be consistent with d_var.
         
         interval = model.NewOptionalIntervalVar(
             s_var, d_var, e_var, is_selected[i], f"interval_{i}"
@@ -173,44 +183,26 @@ def solve_with_flexible_ortools(input_data, time_limit=300):
     # 1. No Overlap
     model.AddNoOverlap(intervals)
     
-    # 2. Prevent Overlap of Splits for SAME program (Sanity check)
-    # The solver *could* pick two splits of the same program window that overlap.
-    # NoOverlap handles this globally anyway! Because all intervals are in the same NoOverlap constraint.
-    
     # --- TRANSITIONS & SEQUENCE ---
-    # Because times are variable, we cannot simply check "start[j] >= end[i]" statically.
-    # We must model the sequence dynamically.
-    # Approach:
-    # We can model this as a "circuit" of visited nodes, but time order matters.
-    #
-    # standard ILP approach for variable time intervals:
-    # "Next" variable or Boolean matrix for transitions.
-    # Since N might be large (~300 with splits?), N^2 bools is 90,000. Acceptable for CP-SAT.
-    
-    # Let's filter N^2. Only allow i -> j if window_start[j] >= window_end[i] - (theoretical max overlap?).
-    # Actually, simpler: only allow i->j if possible.
-    # possible if window_end[i] <= window_end[j] ??
-    # Strict order: end_i <= start_j.
-    
-    # Valid Transition Matrix
+    # Memory Optimized Transition Generation
     possible_trans = []
     trans_vars = {}
     
-    # To optimize: valid transitions are those where windows allow sequentiality
-    # (i.e. window_start[j] + slack? No, just max(end_i) <= min(start_j)? No.)
-    # Condition: overlap is NOT forced.
-    # i.e. max(start_i, start_j) < min(end_i, end_j) is NOT forced to be huge.
-    # Actually, if we use circuit, we just need 'can i come before j'.
-    # i comes before j if window_start[i] + D <= window_end[j]. (Roughly)
-    
+    K_NEIGHBORS = 100
+    print(f"Generating transitions with K_NEIGHBORS={K_NEIGHBORS}...")
+
     for i in range(n):
-        for j in range(n):
-            if i == j: continue
-            
+        count = 0
+        # Search forward
+        for j in range(i + 1, n):
             # Pruning: Is it possible for i to precede j?
             # earliest end of i = window_start[i] + D
             # latest start of j = window_end[j] - D
-            # if earliest_end_i > latest_start_j, impossible.
+            
+            # Simple chronological check since sorted:
+            # We want to find j such that i -> j is plausible.
+            
+            # Strict validation:
             if (candidate_segments[i]['window_start'] + D) > (candidate_segments[j]['window_end'] - D):
                 continue
             
@@ -219,10 +211,14 @@ def solve_with_flexible_ortools(input_data, time_limit=300):
                 continue 
                 
             possible_trans.append((i, j))
-
+            trans_vars[(i, j)] = model.NewBoolVar(f"t_{i}_{j}")
+            
+            count += 1
+            if count >= K_NEIGHBORS:
+                break
+    
     print(f"Generating {len(possible_trans)} transition variables...")
-    for i, j in possible_trans:
-        trans_vars[(i, j)] = model.NewBoolVar(f"t_{i}_{j}")
+    # Loop over possible_trans to create vars is done above
 
     # Flow Constraints
     is_first = [model.NewBoolVar(f"first_{i}") for i in range(n)]
@@ -375,12 +371,68 @@ def solve_with_flexible_ortools(input_data, time_limit=300):
                 model.Add(p_end - p_start < D).OnlyEnforceIf(bonus_applies.Not())
                 
                 # Add to objective (BUT ONLY IF SELECTED)
-                # exact_bonus = pref['bonus'] * (bonus_applies AND is_selected[i])
-                fin_bonus = model.NewBoolVar(f"fb_{i}_{pref['start']}")
+                # FIX: We must ensure we don't double count if multiple segments of the same program overlap the preference.
+                # However, with MAX_SPLITS=1 this is fine. If MAX_SPLITS>1, we should aggregation.
+
+                # Simplified logic for MAX_SPLITS >= 1:
+                # We want to add bonus if ANY segment of this program overlaps this preference window sufficiently.
+                # But calculating "total overlap across all segments" is hard.
+                # As a heuristic/fix for now: We treat the bonus as additive per segment, but we need to arguably capping it?
+                # Actually, the requirement "D minutes overlap" implies specific alignment.
+                # Let's simple apply the bonus term to the specific segment variable, but strictly.
+
+                # CORRECT FIX for matching Toy Output 510:
+                # The bonus is usually a "one-off" reward for the program being scheduled in that slot?
+                # Or is it proportional? The problem description says "Bonuses: Extra points...". 
+                # In `ilp.py`, it's calculated once per candidate window.
+                # Here, we attach it to the segment. 
+                
+                # To prevent double counting for the same program ID and same preference window:
+                # We can pre-calculate the potential bonus for this (Program, Pref) pair.
+                # Then create a variable `bonus_awarded_(prog_id, pref_id)`.
+                # bonus_awarded <=> OR(fin_bonus for all segments of prog_id).
+                
+                # But since we are iterating inside a loop of segments, we can't easily aggregate yet.
+                # We will collect them and add them later.
+                pass # Logic moved outside loop
+
+    # --- 3. Time Preference Bonus (Aggregated) ---
+    # We must aggregate by (ProgramID, PrefIndex) to avoid double counting if a program is split.
+    
+    # Map: (prog_id, pref_idx) -> list of bool_vars (fin_bonus)
+    bonus_opportunities = defaultdict(list)
+    
+    for i in range(n):
+        seg = candidate_segments[i]
+        for p_idx, pref in enumerate(time_prefs):
+            if seg['genre'] == pref['preferred_genre']:
+                # Logic for this segment
+                p_end = model.NewIntVar(0, E, f"pend_{i}_{p_idx}")
+                model.AddMinEquality(p_end, [ends[i], pref['end']])
+                
+                p_start = model.NewIntVar(0, E, f"pstart_{i}_{p_idx}")
+                model.AddMaxEquality(p_start, [starts[i], pref['start']])
+                
+                bonus_applies = model.NewBoolVar(f"bonus_cond_{i}_{p_idx}")
+                # Check if overlap >= D
+                model.Add(p_end - p_start >= D).OnlyEnforceIf(bonus_applies)
+                model.Add(p_end - p_start < D).OnlyEnforceIf(bonus_applies.Not())
+                
+                fin_bonus = model.NewBoolVar(f"fb_{i}_{p_idx}")
                 model.AddBoolAnd([bonus_applies, is_selected[i]]).OnlyEnforceIf(fin_bonus)
                 model.AddBoolOr([bonus_applies.Not(), is_selected[i].Not()]).OnlyEnforceIf(fin_bonus.Not())
                 
-                obj_terms.append(pref['bonus'] * fin_bonus)
+                bonus_opportunities[(seg['id'], p_idx)].append(fin_bonus)
+
+    for (pid, p_idx), bool_list in bonus_opportunities.items():
+        if not bool_list: continue
+        # If ANY segment of this program satisfies the bonus condition, award the bonus ONCE.
+        award_bonus = model.NewBoolVar(f"award_bonus_{pid}_{p_idx}")
+        model.AddBoolOr(bool_list).OnlyEnforceIf(award_bonus)
+        model.AddBoolAnd([b.Not() for b in bool_list]).OnlyEnforceIf(award_bonus.Not())
+        
+        pref_val = time_prefs[p_idx]['bonus']
+        obj_terms.append(pref_val * award_bonus)
 
     # 4. Switch Penalty
     for i, j in trans_vars:

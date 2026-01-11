@@ -1,0 +1,160 @@
+{
+    "scheduled_programs": [
+        {
+            "program_id": "Channel_74_0",
+            "channel_id": 74,
+            "start": 480,
+            "end": 510
+        },
+        {
+            "program_id": "Channel_49_1",
+            "channel_id": 49,
+            "start": 510,
+            "end": 540
+        },
+        {
+            "program_id": "Channel_111_1",
+            "channel_id": 111,
+            "start": 540,
+            "end": 570
+        },
+        {
+            "program_id": "Channel_72_1",
+            "channel_id": 72,
+            "start": 570,
+            "end": 600
+        },
+        {
+            "program_id": "Channel_68_2",
+            "channel_id": 68,
+            "start": 600,
+            "end": 630
+        },
+        {
+            "program_id": "Channel_27_3",
+            "channel_id": 27,
+            "start": 630,
+            "end": 660
+        },
+        {
+            "program_id": "Channel_51_2",
+            "channel_id": 51,
+            "start": 660,
+            "end": 690
+        },
+        {
+            "program_id": "Channel_72_4",
+            "channel_id": 72,
+            "start": 690,
+            "end": 720
+        },
+        {
+            "program_id": "ITV_5",
+            "channel_id": 2,
+            "start": 720,
+            "end": 765
+        },
+        {
+            "program_id": "ITV_6",
+            "channel_id": 2,
+            "start": 765,
+            "end": 810
+        },
+        {
+            "program_id": "Film4_4",
+            "channel_id": 17,
+            "start": 810,
+            "end": 840
+        },
+        {
+            "program_id": "Dave_7",
+            "channel_id": 12,
+            "start": 840,
+            "end": 870
+        },
+        {
+            "program_id": "Channel_91_7",
+            "channel_id": 91,
+            "start": 870,
+            "end": 915
+        },
+        {
+            "program_id": "Channel_63_5",
+            "channel_id": 63,
+            "start": 915,
+            "end": 945
+        },
+        {
+            "program_id": "Channel_108_7",
+            "channel_id": 108,
+            "start": 945,
+            "end": 975
+        },
+        {
+            "program_id": "Channel_116_8",
+            "channel_id": 116,
+            "start": 975,
+            "end": 1005
+        },
+        {
+            "program_id": "Channel_66_8",
+            "channel_id": 66,
+            "start": 1005,
+            "end": 1035
+        },
+        {
+            "program_id": "Comedy_Central_7",
+            "channel_id": 16,
+            "start": 1035,
+            "end": 1065
+        },
+        {
+            "program_id": "Channel_66_10",
+            "channel_id": 66,
+            "start": 1065,
+            "end": 1095
+        },
+        {
+            "program_id": "Channel_38_11",
+            "channel_id": 38,
+            "start": 1095,
+            "end": 1125
+        },
+        {
+            "program_id": "Channel_38_12",
+            "channel_id": 38,
+            "start": 1125,
+            "end": 1155
+        },
+        {
+            "program_id": "Channel_72_11",
+            "channel_id": 72,
+            "start": 1155,
+            "end": 1185
+        },
+        {
+            "program_id": "ITV_14",
+            "channel_id": 2,
+            "start": 1185,
+            "end": 1215
+        },
+        {
+            "program_id": "ITV_15",
+            "channel_id": 2,
+            "start": 1215,
+            "end": 1305
+        },
+        {
+            "program_id": "BBC_Two_10",
+            "channel_id": 1,
+            "start": 1305,
+            "end": 1350
+        },
+        {
+            "program_id": "BBC_Two_11",
+            "channel_id": 1,
+            "start": 1350,
+            "end": 1380
+        }
+    ]
+}
