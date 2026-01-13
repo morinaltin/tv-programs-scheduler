@@ -46,9 +46,8 @@ def solve_with_ortools(input_data, time_limit=300):
     # MAX_SPLITS determines if we allow a program to be split into multiple non-contiguous segments
     # or just trimmed.
     # MAX_SPLITS = 1: Trimming only (Start/End can move, but one continuous block).
-    # MAX_SPLITS > 1: Splitting allowed (A-gap-A).
-    # Defaulting to 1 for safety on large datasets, but logic supports more.
-    MAX_SPLITS = 1
+    # MAX_SPLITS = 2: Allows A-B-A re-entry (Start/End can be covered with a gap in between).
+    MAX_SPLITS = 2
 
     # Preprocessing: Identify Maximal Valid Windows
     candidate_segments = []
@@ -79,17 +78,12 @@ def solve_with_ortools(input_data, time_limit=300):
                 next_windows = []
                 for c_start, c_end in windows:
                     # Clip out the forbidden part
-                    # Case 1: No overlap
                     if c_end <= f_start or c_start >= f_end:
                         next_windows.append((c_start, c_end))
                         continue
-                    
-                    # Case 2: Start remains
                     if c_start < f_start:
                         if (f_start - c_start) >= D:
                             next_windows.append((c_start, f_start))
-                    
-                    # Case 3: End remains
                     if c_end > f_end:
                         if (c_end - f_end) >= D:
                             next_windows.append((f_end, c_end))
@@ -122,8 +116,8 @@ def solve_with_ortools(input_data, time_limit=300):
                         'orig_start': prog['start'],
                         'orig_end': prog['end']
                     })
-                    prog_id_map[prog['program_id']]['segment_indices'].append(candidate_segments[-1]['idx'])
-
+                    # Note: indices will be updated after sorting
+    
     n = len(candidate_segments)
     print(f"Flexible Model: {n} candidate segments generated (Splits={MAX_SPLITS}).")
     
@@ -131,12 +125,8 @@ def solve_with_ortools(input_data, time_limit=300):
     candidate_segments.sort(key=lambda x: x['window_start'])
     
     # Re-map indices after sort
-    for idx, seg in enumerate(candidate_segments):
-        seg['new_idx'] = idx
-
-    # Update prog_id_map indices with new sorted indices
-    for pid, info in prog_id_map.items():
-        info['segment_indices'] = [] 
+    for pid in prog_id_map:
+        prog_id_map[pid]['segment_indices'] = []
         
     for idx, seg in enumerate(candidate_segments):
         prog_id_map[seg['id']]['segment_indices'].append(idx)
@@ -184,35 +174,62 @@ def solve_with_ortools(input_data, time_limit=300):
     model.AddNoOverlap(intervals)
     
     # --- TRANSITIONS & SEQUENCE ---
-    # Memory Optimized Transition Generation
+    # Memory Optimized Transition Generation with Safety Nets
     possible_trans = []
     trans_vars = {}
     
     K_NEIGHBORS = 100
-    print(f"Generating transitions with K_NEIGHBORS={K_NEIGHBORS}...")
+    print(f"Generating transitions (K_NEIGHBORS={K_NEIGHBORS} + channel safety)...")
+
+    # Pre-group segments by channel for safety net lookup
+    segments_by_channel = defaultdict(list)
+    for idx, seg in enumerate(candidate_segments):
+        segments_by_channel[seg['channel']].append(idx)
 
     for i in range(n):
+        seg_i = candidate_segments[i]
+        
+        # 1. Add K-Nearest Neighbors (proximity-based)
         count = 0
-        # Search forward
         for j in range(i + 1, n):
-            # Pruning: Is it possible for i to precede j?
+            seg_j = candidate_segments[j]
             
-            # Strict validation:
-            if (candidate_segments[i]['window_start'] + D) > (candidate_segments[j]['window_end'] - D):
+            # Validation: i must be able to precede j
+            if (seg_i['window_start'] + D) > (seg_j['window_end'] - D):
                 continue
-            
-            # Also if i ends strictly after j starts based on windows
-            if candidate_segments[i]['window_start'] >= candidate_segments[j]['window_end']:
+            if seg_i['window_start'] >= seg_j['window_end']:
                 continue 
                 
-            possible_trans.append((i, j))
-            trans_vars[(i, j)] = model.NewBoolVar(f"t_{i}_{j}")
+            if (i, j) not in trans_vars:
+                possible_trans.append((i, j))
+                trans_vars[(i, j)] = model.NewBoolVar(f"t_{i}_{j}")
             
             count += 1
             if count >= K_NEIGHBORS:
                 break
+
+        # 2. Safety Net: Ensure we can transition to the NEXT reachable program 
+        # on EVERY channel. This prevents missing a high-score program far 
+        # down the timeline if the gap is filled with many low-score segments.
+        for cid, indices in segments_by_channel.items():
+            for j in indices:
+                if j <= i: continue
+                
+                seg_j = candidate_segments[j]
+                # Precedence validation
+                if (seg_i['window_start'] + D) > (seg_j['window_end'] - D):
+                    continue
+                if seg_i['window_start'] >= seg_j['window_end']:
+                    continue
+                
+                if (i, j) not in trans_vars:
+                    possible_trans.append((i, j))
+                    trans_vars[(i, j)] = model.NewBoolVar(f"t_{i}_{j}")
+                
+                # Just the first reachable one per channel is enough to bridge the gap
+                break
     
-    print(f"Generating {len(possible_trans)} transition variables...")
+    print(f"Generated {len(possible_trans)} transition variables.")
 
     # Flow Constraints
     is_first = [model.NewBoolVar(f"first_{i}") for i in range(n)]
