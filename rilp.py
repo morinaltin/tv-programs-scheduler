@@ -1,310 +1,192 @@
-"""
-Relaxed TV Channel Scheduling Optimization
-- Ignores channel switch penalties
-- Ignores genre diversity constraints
-- Maximizes base score + bonuses only
-- Only enforces: no overlaps, min duration, time boundaries, priority blocks
-"""
-
-import json
 import sys
-from pulp import *
-
+import json
+import time
+import argparse
+import os
+from ortools.sat.python import cp_model
+from collections import defaultdict
 
 def load_input(filepath):
     with open(filepath, 'r') as f:
         return json.load(f)
 
+def save_output(output_data, filepath):
+    with open(filepath, 'w') as f:
+        json.dump(output_data, f, indent=4)
 
-def solve_relaxed_ilp(input_data, time_limit=300):
-    """
-    Solve TV scheduling with relaxed constraints using optimized ILP.
-
-    Optimizations:
-    - Always uses partial scheduling
-    - Efficient overlap detection (O(n log n) instead of O(n²))
-    - Uses Gurobi if available, otherwise CBC
-    """
-    print("=" * 60)
-    print("OPTIMIZED RELAXED ILP SOLVER")
-    print("Ignoring: Switch Penalties, Genre Diversity")
-    print("Partial Scheduling: ALWAYS ENABLED")
-    print("=" * 60)
-
-    # Extract parameters
+def solve_with_ortools(input_data, output_file, time_limit=300, num_cores=8, hint_file=None, min_score=None, max_score=None):
+    start_time = time.time()
+    
     O = input_data['opening_time']
     E = input_data['closing_time']
     D = input_data['min_duration']
+    
     priority_blocks = input_data.get('priority_blocks', [])
     time_prefs = input_data.get('time_preferences', [])
-    channels = input_data['channels']
+    channels_data = input_data['channels']
 
-    print(f"\nVenue Hours: {O} - {E} (min duration: {D})")
-    print(f"Priority Blocks: {len(priority_blocks)}")
-    print(f"Time Preferences: {len(time_prefs)}")
-
-    # Build program candidates
-    programs = []
-
-    print("\nBuilding program segments...")
-    for channel in channels:
-        chan_id = channel['channel_id']
-
+    candidates = []
+    
+    for channel in channels_data:
+        cid = channel['channel_id']
         for prog in channel['programs']:
-            p_start = prog['start']
-            p_end = prog['end']
-            duration = p_end - p_start
-
-            # Skip if completely outside venue hours
-            if p_start >= E or p_end <= O:
+            if prog['start'] >= E or prog['end'] <= O:
                 continue
 
-            # Clip to venue hours
-            p_start = max(p_start, O)
-            p_end = min(p_end, E)
-            duration = p_end - p_start
+            v_start = max(O, prog['start'])
+            v_end = min(E, prog['end'])
 
-            # Check minimum duration
-            if duration < D:
+            forbidden = []
+            for block in priority_blocks:
+                if cid not in block['allowed_channels']:
+                    f_s = max(v_start, block['start'])
+                    f_e = min(v_end, block['end'])
+                    if f_s < f_e:
+                        forbidden.append((f_s, f_e))
+            
+            windows = [(v_start, v_end)]
+            for f_s, f_e in forbidden:
+                next_w = []
+                for c_s, c_e in windows:
+                    if c_e <= f_s or c_s >= f_e:
+                        next_w.append((c_s, c_e))
+                        continue
+                    if c_s < f_s:
+                        next_w.append((c_s, f_s))
+                    if c_e > f_e:
+                        next_w.append((f_e, c_e))
+                windows = next_w
+
+            for w_s, w_e in windows:
+                orig_dur = prog['end'] - prog['start']
+                m_d = min(D, orig_dur)
+                if (w_e - w_s) < m_d:
+                    continue
+                
+                candidates.append({
+                    'id': prog['program_id'],
+                    'channel': cid,
+                    'genre': prog['genre'],
+                    'w_start': w_s,
+                    'w_end': w_e,
+                    'orig_start': prog['start'],
+                    'orig_end': prog['end'],
+                    'min_d': m_d,
+                    'score': prog['score']
+                })
+
+    n = len(candidates)
+    model = cp_model.CpModel()
+    
+    is_present = [model.NewBoolVar(f'p_{i}') for i in range(n)]
+    starts = [model.NewIntVar(c['w_start'], c['w_end'], f's_{i}') for i, c in enumerate(candidates)]
+    ends = [model.NewIntVar(c['w_start'], c['w_end'], f'e_{i}') for i, c in enumerate(candidates)]
+    durations = [model.NewIntVar(0, c['w_end'] - c['w_start'], f'd_{i}') for i, c in enumerate(candidates)]
+    intervals = []
+
+    for i, c in enumerate(candidates):
+        model.Add(durations[i] == ends[i] - starts[i])
+        model.Add(durations[i] >= c['min_d']).OnlyEnforceIf(is_present[i])
+        model.Add(durations[i] == 0).OnlyEnforceIf(is_present[i].Not())
+        intervals.append(model.NewOptionalIntervalVar(starts[i], durations[i], ends[i], is_present[i], f'int_{i}'))
+
+    model.AddNoOverlap(intervals)
+
+    start_node = n
+    end_node = n + 1
+    arcs = []
+    arc_literals = {}
+
+    for i in range(n):
+        lit = model.NewBoolVar(f'st_{i}')
+        arcs.append([start_node, i, lit])
+        arc_literals[(start_node, i)] = lit
+        model.AddImplication(lit, is_present[i])
+
+        lit = model.NewBoolVar(f'{i}_en')
+        arcs.append([i, end_node, lit])
+        arc_literals[(i, end_node)] = lit
+        model.AddImplication(lit, is_present[i])
+
+        for j in range(n):
+            if i == j:
+                lit = model.NewBoolVar(f'self_{i}')
+                arcs.append([i, i, lit])
+                model.Add(is_present[i] == 0).OnlyEnforceIf(lit)
+                model.Add(is_present[i] == 1).OnlyEnforceIf(lit.Not())
                 continue
+            
+            if candidates[i]['w_start'] + candidates[i]['min_d'] > candidates[j]['w_end'] - candidates[j]['min_d']:
+                continue
+            
+            lit = model.NewBoolVar(f'a_{i}_{j}')
+            arcs.append([i, j, lit])
+            arc_literals[(i, j)] = lit
+            model.AddImplication(lit, is_present[i])
+            model.AddImplication(lit, is_present[j])
+            model.Add(ends[i] <= starts[j]).OnlyEnforceIf(lit)
 
-            # Handle priority blocks - always use partial scheduling
-            segments = split_program_by_priority_blocks(
-                p_start, p_end, chan_id, priority_blocks
-            )
+    arcs.append([end_node, start_node, model.NewConstant(1)])
+    model.AddCircuit(arcs)
 
-            for seg_start, seg_end in segments:
-                seg_duration = seg_end - seg_start
-                if seg_duration >= D:
-                    score = calculate_program_score(
-                        prog, seg_start, seg_end, time_prefs, D
-                    )
-                    programs.append({
-                        'id': prog['program_id'],
-                        'channel': chan_id,
-                        'start': seg_start,
-                        'end': seg_end,
-                        'genre': prog['genre'],
-                        'score': score,
-                        'duration': seg_duration
-                    })
+    obj_base = sum(c['score'] * is_present[i] for i, c in enumerate(candidates))
+    
+    bonus_terms = []
+    for i, c in enumerate(candidates):
+        for b_idx, pref in enumerate(time_prefs):
+            if c['genre'] == pref['preferred_genre']:
+                p_s = max(O, c['orig_start'], pref['start'])
+                p_e = min(E, c['orig_end'], pref['end'])
+                if p_e - p_s >= c['min_d']:
+                    b_lit = model.NewBoolVar(f'b_{i}_{b_idx}')
+                    model.Add(starts[i] <= pref['end'] - D).OnlyEnforceIf(b_lit)
+                    model.Add(ends[i] >= pref['start'] + D).OnlyEnforceIf(b_lit)
+                    model.AddImplication(b_lit, is_present[i])
+                    bonus_terms.append(b_lit * pref['bonus'])
 
-    n = len(programs)
-    print(f"\nProgram candidates: {n}")
+    total_obj = obj_base + sum(bonus_terms)
+    model.Maximize(total_obj)
 
-    if n == 0:
-        print("No valid programs found!")
-        return None
+    if hint_file and os.path.exists(hint_file):
+        try:
+            with open(hint_file, 'r') as hf:
+                h_data = json.load(hf)
+            for sp in h_data.get('scheduled_programs', []):
+                for i, c in enumerate(candidates):
+                    if c['id'] == sp['program_id'] and c['channel'] == sp['channel_id']:
+                        if c['w_start'] <= sp['start'] and c['w_end'] >= sp['end']:
+                            model.AddHint(is_present[i], 1)
+                            model.AddHint(starts[i], sp['start'])
+                            model.AddHint(ends[i], sp['end'])
+                            break
+        except: pass
 
-    # Create ILP model
-    prob = LpProblem("Relaxed_TV_Schedule", LpMaximize)
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = time_limit
+    solver.parameters.num_search_workers = num_cores
+    solver.parameters.log_search_progress = True
+    status = solver.Solve(model)
 
-    # Decision variables
-    x = LpVariable.dicts("x", range(n), cat='Binary')
-
-    # Objective: maximize total score
-    prob += lpSum(programs[i]['score'] * x[i] for i in range(n)), "Total_Score"
-
-    # Constraint: no overlapping programs
-    # OPTIMIZATION: Use clique-based formulation instead of pairwise
-    # Group programs into time buckets for efficient overlap detection
-    print("Building efficient overlap constraints...")
-
-    # Sort programs by start time
-    sorted_programs = sorted(enumerate(programs), key=lambda x: x[1]['start'])
-
-    # For each program, only check overlaps with nearby programs
-    overlaps = set()
-    for idx, (i, pi) in enumerate(sorted_programs):
-        # Only check programs that start before this one ends
-        for j_idx in range(idx + 1, n):
-            j, pj = sorted_programs[j_idx]
-
-            # If program j starts after program i ends, no more overlaps possible
-            if pj['start'] >= pi['end']:
-                break
-
-            # They overlap
-            if pi['start'] < pj['end'] and pj['start'] < pi['end']:
-                overlaps.add((min(i, j), max(i, j)))
-
-    print(f"Overlap constraints: {len(overlaps)}")
-
-    # Add constraints in batches for better performance
-    for i, j in overlaps:
-        prob += x[i] + x[j] <= 1, f"no_overlap_{i}_{j}"
-
-    # Solve with appropriate solver
-    print(f"\nSolving (time limit: {time_limit}s)...")
-
-    # Just use CBC - it's the most reliable
-    solver = PULP_CBC_CMD(msg=1, timeLimit=time_limit)
-    print("Using CBC solver")
-
-    prob.solve(solver)
-
-    status = LpStatus[prob.status]
-    print(f"Status: {status}")
-
-    if status not in ['Optimal', 'Not Solved']:
-        print("No feasible solution found")
-        return None
-
-    # Extract solution
-    selected = [i for i in range(n) if value(x[i]) > 0.5]
-    selected.sort(key=lambda i: programs[i]['start'])
-
-    # Build output
-    schedule = []
-    total_score = 0
-
-    print("\n" + "=" * 60)
-    print("SCHEDULE")
-    print("=" * 60)
-
-    for idx, i in enumerate(selected):
-        p = programs[i]
-        total_score += p['score']
-
-        schedule.append({
-            "program_id": p['id'],
-            "channel_id": p['channel'],
-            "start": p['start'],
-            "end": p['end']
-        })
-
-        print(f"{idx+1:2}. [{format_time(p['start'])} - {format_time(p['end'])}] "
-              f"{p['id']:20} Ch{p['channel']} {p['genre']:15} +{p['score']:4}")
-
-    print("=" * 60)
-    print(f"TOTAL SCORE: {total_score}")
-    print(f"Programs: {len(selected)}")
-    print("=" * 60)
-
-    return {
-        "scheduled_programs": schedule,
-        "total_score": total_score
-    }
-
-
-def split_program_by_priority_blocks(start, end, channel_id, priority_blocks):
-    """
-    Split a program's time window into valid segments that don't violate priority blocks.
-    Returns list of (start, end) tuples.
-    """
-    # Find all priority blocks that affect this program and channel
-    blocking_intervals = []
-
-    for block in priority_blocks:
-        # If this channel is NOT allowed during this block
-        if channel_id not in block['allowed_channels']:
-            # And the block overlaps with the program
-            if start < block['end'] and end > block['start']:
-                block_start = max(start, block['start'])
-                block_end = min(end, block['end'])
-                blocking_intervals.append((block_start, block_end))
-
-    if not blocking_intervals:
-        return [(start, end)]
-
-    # Sort blocking intervals
-    blocking_intervals.sort()
-
-    # Merge overlapping blocking intervals
-    merged = [blocking_intervals[0]]
-    for curr_start, curr_end in blocking_intervals[1:]:
-        last_start, last_end = merged[-1]
-        if curr_start <= last_end:
-            merged[-1] = (last_start, max(last_end, curr_end))
-        else:
-            merged.append((curr_start, curr_end))
-
-    # Build valid segments between blocks
-    segments = []
-    current = start
-
-    for block_start, block_end in merged:
-        if current < block_start:
-            segments.append((current, block_start))
-        current = max(current, block_end)
-
-    if current < end:
-        segments.append((current, end))
-
-    return segments
-
-
-def calculate_program_score(prog, start, end, time_prefs, min_duration):
-    """Calculate base score + bonuses for a program segment."""
-    score = prog['score']
-
-    # Add time preference bonuses
-    for pref in time_prefs:
-        if prog['genre'] == pref['preferred_genre']:
-            overlap_start = max(start, pref['start'])
-            overlap_end = min(end, pref['end'])
-            overlap_duration = overlap_end - overlap_start
-
-            if overlap_duration >= min_duration:
-                score += pref['bonus']
-
-    return score
-
-
-def format_time(minutes):
-    """Format minutes as HH:MM"""
-    hours = minutes // 60
-    mins = minutes % 60
-    return f"{hours:02d}:{mins:02d}"
-
-
-def save_output(output_data, filepath):
-    """Save schedule to JSON file"""
-    data_to_save = {"scheduled_programs": output_data["scheduled_programs"]}
-    with open(filepath, 'w') as f:
-        json.dump(data_to_save, f, indent=4)
-
+    if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
+        res_progs = []
+        for i, c in enumerate(candidates):
+            if solver.BooleanValue(is_present[i]):
+                res_progs.append({
+                    "program_id": c['id'], "channel_id": c['channel'],
+                    "start": solver.Value(starts[i]), "end": solver.Value(ends[i])
+                })
+        res_progs.sort(key=lambda x: x['start'])
+        output_data = {"scheduled_programs": res_progs, "total_score": int(solver.ObjectiveValue())}
+        save_output(output_data, output_file)
+        return output_data
+    return None
 
 if __name__ == "__main__":
-    # Parse arguments - all required from command line
-    if len(sys.argv) < 3:
-        print("Usage: python script.py <input_file> <output_file> [time_limit] [allow_partial]")
-        print("  input_file: Path to input JSON file (required)")
-        print("  output_file: Path to output JSON file (required)")
-        print("  time_limit: Solver time limit in seconds (default: 300)")
-        print("  allow_partial: Enable partial program scheduling (default: false)")
-        print("\nExample: python script.py input.json output.json 300 true")
-        sys.exit(1)
-
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-
-    time_limit = 300
-    if len(sys.argv) > 3:
-        try:
-            time_limit = int(sys.argv[3])
-        except ValueError:
-            print(f"Warning: Invalid time limit '{sys.argv[3]}'. Using default (300s).")
-
-    allow_partial = True  # Always enabled
-
-    print(f"\nInput:  {input_file}")
-    print(f"Output: {output_file}")
-    print(f"Time Limit: {time_limit}s\n")
-
-    try:
-        input_data = load_input(input_file)
-        result = solve_relaxed_ilp(input_data, time_limit)
-
-        if result:
-            save_output(result, output_file)
-            print(f"\nSolution saved to {output_file}")
-        else:
-            print("\nNo solution found")
-
-    except FileNotFoundError:
-        print(f"Error: File '{input_file}' not found")
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input')
+    parser.add_argument('output')
+    parser.add_argument('-t', '--time', type=int, default=300)
+    parser.add_argument('-c', '--cores', type=int, default=8)
+    parser.add_argument('--hint')
+    args = parser.parse_args()
+    solve_with_ortools(load_input(args.input), args.output, args.time, args.cores, args.hint)

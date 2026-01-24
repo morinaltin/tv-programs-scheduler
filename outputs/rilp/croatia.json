@@ -7,14 +7,14 @@
             "end": 390
         },
         {
-            "program_id": "RTL_Hrvatska_1",
-            "channel_id": 4,
+            "program_id": "HBO_Adria_1",
+            "channel_id": 14,
             "start": 390,
             "end": 420
         },
         {
-            "program_id": "HBO_Adria_1",
-            "channel_id": 14,
+            "program_id": "RTL_Hrvatska_1",
+            "channel_id": 4,
             "start": 420,
             "end": 450
         },
@@ -121,14 +121,14 @@
             "end": 960
         },
         {
-            "program_id": "SportKlub1_7",
-            "channel_id": 5,
+            "program_id": "ArenaSport2_8",
+            "channel_id": 8,
             "start": 960,
             "end": 990
         },
         {
-            "program_id": "SportKlub2_11",
-            "channel_id": 6,
+            "program_id": "SportKlub1_7",
+            "channel_id": 5,
             "start": 990,
             "end": 1020
         },
@@ -204,5 +204,6 @@
             "start": 1350,
             "end": 1380
         }
-    ]
+    ],
+    "total_score": 3488
 }

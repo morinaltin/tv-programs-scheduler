@@ -73,14 +73,14 @@
             "end": 780
         },
         {
-            "program_id": "ABCNews_5",
-            "channel_id": 8,
+            "program_id": "Rubikon_4",
+            "channel_id": 7,
             "start": 780,
             "end": 810
         },
         {
-            "program_id": "Rubikon_4",
-            "channel_id": 7,
+            "program_id": "ABCNews_5",
+            "channel_id": 8,
             "start": 810,
             "end": 840
         },
@@ -91,14 +91,14 @@
             "end": 870
         },
         {
-            "program_id": "SportKosova_7",
-            "channel_id": 9,
+            "program_id": "TVPrishtina_7",
+            "channel_id": 12,
             "start": 870,
             "end": 900
         },
         {
-            "program_id": "TVPrishtina_7",
-            "channel_id": 12,
+            "program_id": "SportKosova_7",
+            "channel_id": 9,
             "start": 900,
             "end": 930
         },
@@ -192,5 +192,6 @@
             "start": 1350,
             "end": 1380
         }
-    ]
+    ],
+    "total_score": 3099
 }
