@@ -1,509 +1,153 @@
-# Mathematical Formulation - TV Scheduling Problem
+# Mathematical Formulation - TV Scheduling Problem (CP-SAT)
 
-This document provides the complete mathematical formulations for both ILP and RILP approaches.
+This document provides a rigorous mathematical formulation of the TV program scheduling problem as implemented using the **Google OR-Tools CP-SAT** solver. This implementation shifts from traditional Mixed-Integer Linear Programming (MILP) to Constraint Programming (CP) to better handle sequencing and flexible interval logic.
 
 ---
 
-## Problem Notation
+## 1. Problem Notation
 
 ### Sets and Indices
+- $P$: Set of candidate programs (after initial temporal and priority filtering), indexed by $i, j \in \{0, \dots, n-1\}$.
+- $G$: Set of genres.
+- $B$: Set of time preference bonus windows.
 
-- **P** = Set of all programs (after filtering), indexed by *i*, *j* ∈ {0, 1, ..., n-1}
-- **G** = Set of all genres
-- **CF(i)** = Set of programs that can follow program *i* (i.e., {j : start_j ≥ end_i})
-- **CONFLICTS(i)** = Set of programs that overlap with program *i*
-
-### Parameters
-
-| Symbol | Description |
-|--------|-------------|
-| **O** | Opening time (minutes from midnight) |
-| **E** | Closing time (minutes from midnight) |
-| **D** | Minimum program duration (minutes) |
-| **R** | Maximum consecutive programs of same genre |
-| **S_pen** | Channel switch penalty |
-| **T_pen** | Termination penalty (unused) |
-| **n** | Number of programs after filtering |
-
-### Program Attributes
-
-For each program *i* ∈ P:
-
-- **start_i** : Start time
-- **end_i** : End time  
-- **channel_i** : Channel ID
-- **genre_i** : Genre (string/category)
-- **score_i** : Base score (viewer interest)
-- **id_i** : Program identifier
-
-### Time Preferences
-
-Set of tuples (t_start, t_end, genre, bonus):
-- Programs of specified genre overlapping [t_start, t_end] by at least D minutes receive bonus points
-
-### Priority Blocks
-
-Set of tuples (t_start, t_end, allowed_channels):
-- Only programs from allowed_channels can be scheduled in [t_start, t_end]
+### Constants and Parameters
+- $O, E$: Global viewing window bounds (Opening and Closing minutes).
+- $D$: Minimum required duration for any program to be considered "valid".
+- $R$: Maximum allowed consecutive programs of the same genre.
+- $S_{pen}$: Fixed penalty for each channel switch.
+- $T_{pen}$: Fixed penalty for terminating a program early (either start late or end early).
+- For each program $i \in P$:
+  - $orig\_start_i, orig\_end_i$: The original broadcast times.
+  - $w\_start_i, w\_end_i$: The feasible time window $[w\_start, w\_end]$ considering global bounds and priority blocks.
+  - $score_i$: Base interest score.
+  - $genre_i$: Categorical genre.
+  - $channel_i$: Source channel ID.
+  - $min\_d_i$: Minimum duration $\max(D, \text{portion of program in window if shorter than } D)$. *Wait, code says `min(D, orig_dur)`. Correction: `min(D, orig_dur)`.*
 
 ---
 
-## ILP Formulation (Exact Model)
+## 2. Decision Variables
 
-### Decision Variables
+### Timing and Selection
+For each program $i \in P$:
+- $x_i \in \{0, 1\}$: Presence variable ($1$ if scheduled).
+- $s_i \in [w\_start_i, w\_end\_i]$: Scheduled start time.
+- $e_i \in [w\_start\_i, w\_end\_i]$: Scheduled end time.
+- $d_i \in [0, w\_end\_i - w\_start\_i]$: Scheduled duration.
+- $Interval_i$: An optional interval variable defined by $(s_i, d_i, e_i, x_i)$.
 
-1. **x_i ∈ {0, 1}** : Selection variable
-   - x_i = 1 if program i is selected in the schedule
-   - x_i = 0 otherwise
+### Sequencing (The Circuit Model)
+A **Circuit constraint** is applied over a graph where nodes are programs $\{0, \dots, n-1\}$, plus a special "Source/Sink" node $n$.
+- $a_{i,j} \in \{0, 1\}$: Binary arc variable. $1$ if program $j$ immediately follows $i$.
+- $a_{start, i} \in \{0, 1\}$: Program $i$ is the first in the schedule.
+- $a_{i, end} \in \{0, 1\}$: Program $i$ is the last in the schedule.
+- $a_{i, i} \in \{0, 1\}$: Self-loop variable. $a_{i, i} = 1 \iff x_i = 0$ (program not selected).
 
-2. **seq_{i,j} ∈ {0, 1}** : Sequencing variable (for all i, j where j ∈ CF(i))
-   - seq_{i,j} = 1 if program j immediately follows program i
-   - seq_{i,j} = 0 otherwise
-
-3. **first_i ∈ {0, 1}** : First program indicator
-   - first_i = 1 if program i is the first in the schedule
-   - first_i = 0 otherwise
-
-4. **last_i ∈ {0, 1}** : Last program indicator
-   - last_i = 1 if program i is the last in the schedule
-   - last_i = 0 otherwise
-
-5. **run_{i,k} ∈ {0, 1}** : Genre run position (for k ∈ {1, 2, ..., R})
-   - run_{i,k} = 1 if program i is the k-th consecutive program of its genre
-   - run_{i,k} = 0 otherwise
-
-### Objective Function
-
-```
-Maximize:  Z = Σ score_i · x_i + Σ bonus_i · x_i - S_pen · Σ seq_{i,j} · switch_{i,j}
-              i∈P              i∈P                    (i,j)
-```
-
-Where:
-- **bonus_i** = sum of all time preference bonuses applicable to program i
-- **switch_{i,j}** = 1 if channel_i ≠ channel_j, 0 otherwise (constant)
-
-Expanded:
-```
-Z = Σ (score_i + bonus_i) · x_i - S_pen · Σ seq_{i,j}
-    i∈P                                    (i,j): channel_i ≠ channel_j
-```
-
-### Constraints
-
-#### 1. No Overlapping Programs
-
-For all pairs (i, j) where j ∈ CONFLICTS(i) and i < j:
-
-```
-x_i + x_j ≤ 1
-```
-
-*Ensures at most one program from each overlapping pair is selected.*
+### Penalty and Bonus Tracking
+- $late\_s_i \in \{0,1\}$: Indicates if $s_i > orig\_start_i$.
+- $early\_e_i \in \{0,1\}$: Indicates if $e_i < orig\_end_i$.
+- $gr_i \in \{1, \dots, R\}$: The "run position" of program $i$ within a same-genre sequence.
+- $bonus_{i,b} \in \{0,1\}$: Indicates if program $i$ earns bonus from preference window $b$.
 
 ---
 
-#### 2. Flow Conservation (Sequencing)
+## 3. Detailed Constraints
 
-**2a. Outgoing Flow**
+### 3.1 Timing and Non-Overlap
+For all $i \in P$:
+- **Duration Equality**: $d_i = e_i - s_i$.
+- **Optional Presence**: 
+  - If $x_i = 1 \implies d_i \ge min\_d_i$.
+  - If $x_i = 0 \implies d_i = 0, s_i = e_i$.
+- **Non-Overlap Condition**:
+  $$\text{NoOverlap}(\{Interval_i \mid i \in P\})$$
+  *Mathematically: For any $i, j$ where $x_i = 1$ and $x_j = 1$, the intervals $[s_i, e_i)$ and $[s_j, e_j)$ must be disjoint.*
 
-For each program i ∈ P:
+### 3.2 Circuit and Sequencing
+The arcs $a_{i,j}$ must form a single Hamiltonian circuit that includes the "Source/Sink" node and all selected programs.
+- **Circuit Linkage**: $\text{Circuit}(\{a_{i,j}\})$.
+- **Temporal Order**: If $a_{i,j} = 1$ and $i, j \neq n$, then $e_i \le s_j$. This prevents "backward" sequences in time.
+- **Presence Consistency**: If $a_{i,j} = 1$ and $i \neq j$, then $x_i = 1$ and $x_j = 1$.
 
-```
-Σ seq_{i,j} + last_i = x_i
-j∈CF(i)
-```
+### 3.3 Trimming (Termination) Logic
+This logic penalizes "shrinking" a program to fit the timeline.
+- **Start Trimming**:
+  - $late\_s_i \implies s_i > orig\_start_i$
+  - $(x_i = 1 \land \neg late\_s_i) \implies s_i = orig\_start_i$
+- **End Trimming**:
+  - $early\_early_e_i \implies e_i < orig\_end_i$
+  - $(x_i = 1 \land \neg early\_e_i) \implies e_i = orig\_end_i$
+- **Implication**: $late\_s_i \implies x_i = 1$ and $early\_e_i \implies x_i = 1$.
 
-*If program i is selected, it either has a successor or is the last program.*
-
-**2b. Incoming Flow**
-
-For each program i ∈ P:
-
-```
-Σ seq_{j,i} + first_i = x_i
-j: i∈CF(j)
-```
-
-*If program i is selected, it either has a predecessor or is the first program.*
-
-**2c. At Most One First**
-
-```
-Σ first_i ≤ 1
-i∈P
-```
-
-**2d. At Most One Last**
-
-```
-Σ last_i ≤ 1
-i∈P
-```
+### 3.4 Genre Diversity
+Tracking is done via the $gr_i$ variables:
+1. **Inheritance**: If $genre_i = genre_j$ and $a_{i,j} = 1 \implies gr_j = gr_i + 1$.
+2. **Reset**: If $genre_i \neq genre_j$ and $a_{i,j} = 1 \implies gr_j = 1$.
+3. **Start Reset**: If $a_{start, i} = 1 \implies gr_i = 1$.
+4. **Limit**: $gr_i \le R$ for all selected programs.
 
 ---
 
-#### 3. Genre Diversity Constraints
+## 4. Objective Function
 
-**3a. Exactly One Run Position**
+Maximize the total schedule utility $Z$:
 
-For each program i ∈ P:
+$$Z = \sum_{i \in P} (score_i \cdot x_i) + \sum_{i \in P} \sum_{b \in B} (bonus\_val_b \cdot bonus_{i,b}) - \text{Total Penalties}$$
 
-```
-Σ run_{i,k} = x_i
-k=1 to R
-```
-
-*Every selected program has exactly one run position (1st, 2nd, ..., or R-th).*
-
-**3b. Run Position Inheritance (Same Genre)**
-
-For each program i ∈ P, each predecessor j where j ∈ {k : i ∈ CF(k) and genre_k = genre_i}, and each position k ∈ {1, ..., R-1}:
-
-```
-run_{i,k+1} ≥ seq_{j,i} + run_{j,k} - 1
-```
-
-*If program j at position k is followed by program i of the same genre, then i must be at position k+1.*
-
-**3c. Run Position Reset (First or Different Genre)**
-
-For each program i ∈ P:
-
-```
-run_{i,1} ≥ first_i
-```
-
-*If i is first, it's at position 1.*
-
-For each program i and each predecessor j where genre_j ≠ genre_i:
-
-```
-run_{i,1} ≥ seq_{j,i}
-```
-
-*If preceded by different genre, position resets to 1.*
-
-**3d. Prevent Exceeding Maximum Run**
-
-For each program i ∈ P and each successor j ∈ CF(i) where genre_j = genre_i:
-
-```
-seq_{i,j} + run_{i,R} ≤ 1
-```
-
-*A program at position R cannot be followed by the same genre.*
+Where **Total Penalties** is:
+$$\text{Total Penalties} = S_{pen} \cdot \sum_{\substack{a_{i,j} = 1 \\ chan_i \neq chan_j \\ i,j \neq n}} 1 + T_{pen} \cdot \sum_{i \in P} (late\_s_i + early\_e_i)$$
 
 ---
 
-### Complete ILP Model Summary
+## 5. Trimming Example Calculation
 
-```
-Maximize:
-    Z = Σ (score_i + bonus_i) · x_i - S_pen · Σ seq_{i,j}
-        i∈P                                    (i,j): channel_i ≠ channel_j
+Consider a scenario with **Termination Penalty $T_{pen} = 50$**.
 
-Subject to:
-    x_i + x_j ≤ 1                                    ∀(i,j): j ∈ CONFLICTS(i), i < j
-    
-    Σ seq_{i,j} + last_i = x_i                       ∀i ∈ P
-    j∈CF(i)
-    
-    Σ seq_{j,i} + first_i = x_i                      ∀i ∈ P
-    j: i∈CF(j)
-    
-    Σ first_i ≤ 1
-    i∈P
-    
-    Σ last_i ≤ 1
-    i∈P
-    
-    Σ run_{i,k} = x_i                                ∀i ∈ P
-    k=1 to R
-    
-    run_{i,k+1} ≥ seq_{j,i} + run_{j,k} - 1         ∀i, j: genre_i = genre_j, k ∈ {1,...,R-1}
-    
-    run_{i,1} ≥ first_i                              ∀i ∈ P
-    
-    run_{i,1} ≥ seq_{j,i}                            ∀i, j: genre_i ≠ genre_j
-    
-    seq_{i,j} + run_{i,R} ≤ 1                        ∀i, j ∈ CF(i): genre_i = genre_j
-    
-    x_i ∈ {0,1}                                      ∀i ∈ P
-    seq_{i,j} ∈ {0,1}                                ∀i, j ∈ CF(i)
-    first_i, last_i ∈ {0,1}                          ∀i ∈ P
-    run_{i,k} ∈ {0,1}                                ∀i ∈ P, k ∈ {1,...,R}
-```
+**Program A**: `orig_start: 100`, `orig_end: 200`, `score: 500`.
+**Program B**: `orig_start: 180`, `orig_end: 250`, `score: 400`.
+
+There is a 20-minute overlap. The solver has three main strategies:
+
+1. **Keep A, discard B**:
+   - Score: 500. Penalties: 100 (for omitting B). Total: 400.
+2. **Shorten A (End Early)**:
+   - Program A runs [100, 180]. Program B runs [180, 250].
+   - $early\_e_A = 1$ (A ends at 180 instead of 200). $late\_s_B = 0$.
+   - Scores: 500 + 400 = 900.
+   - Penalty: $T_{pen} = 50$.
+   - **Total: 850**.
+3. **Shorten B (Start Late)**:
+   - Program A runs [100, 200]. Program B runs [200, 250].
+   - $late\_s_B = 1$ (B starts at 200 instead of 180).
+   - Scores: 900. Penalty: 50. Total: 850.
+
+The solver will choose strategy 2 or 3 because 850 > 400.
 
 ---
 
-## RILP Formulation (Relaxed Model)
+## 6. Theoretical Background: CP vs. MILP
 
-### Additional Notation
+### Why CP-SAT?
+Standard ILP (using PuLP/Cbc) models non-overlap by creating $O(n^2)$ pairwise constraints: $x_i + x_j \le 1$. In our project, where start/end times are variables, this becomes even harder to model linearly.
 
-- **T** = Set of all time points (minutes) where at least one program is active
-- **ACTIVE(t)** = Set of programs that cover time point t (i.e., {i : start_i ≤ t < end_i})
+**OR-Tools CP-SAT provides:**
+1. **Global Constraints**: `NoOverlap` uses a dedicated algorithm (Interval Algebra) which is much faster than individual linear inequalities.
+2. **Circuit Propagator**: The `Circuit` constraint handles sequencing and sub-tour elimination (ensuring you don't have three programs trapped in a loop in the middle of the day) automatically.
+3. **Lazy Clauses**: Instead of checking every combination, the solver "learns" during search which constraints are being violated and adds them on the fly.
 
-### Decision Variables
-
-Only selection variables:
-
-```
-x_i ∈ {0,1}    ∀i ∈ P
-```
-
-**No sequencing, first/last, or run position variables!**
-
-### Objective Function
-
-```
-Maximize:  Z = Σ (score_i + bonus_i) · x_i
-              i∈P
-```
-
-*Note: Channel switch penalties and genre diversity constraints are completely ignored in this relaxed formulation.*
-
-### Constraints
-
-#### 1. Time-Based Overlap Constraints
-
-For each time point t ∈ T where |ACTIVE(t)| > 1:
-
-```
-Σ x_i ≤ 1
-i∈ACTIVE(t)
-```
-
-*At most one program can be active (playing) at any given time point.*
-
-**Implementation Note**: Time points are discretized into 1-minute intervals. For each minute from opening_time to closing_time, if multiple programs cover that minute, a constraint is added.
-
-**Key Insight**: Instead of O(n²) pairwise overlap constraints, we have at most O(T) constraints where T is the number of minutes in the viewing window (e.g., 1440 for a full day).
+### Complexity
+- **Variables**: $4n$ for timing/selection + $n^2$ for sequencing arcs.
+- **Constraints**: $O(n)$ for timing + $O(n^2)$ for transitions.
+- **Pruning**: CP-SAT uses "Domain Reduction" to quickly eliminate times that are physically impossible (e.g., a program with 30 min duration starting 10 minutes before the end of the day).
 
 ---
 
-### Complete RILP Model Summary
+## 7. RILP Variation (Relaxed)
 
-```
-Maximize:
-    Z = Σ (score_i + bonus_i) · x_i
-        i∈P
+The **RILP** (Relaxed model) is a subset of the above. It removes:
+- The `Circuit` transitions logic (all $a_{i,j}$ involving channel changes).
+- The `gr_i` genre run tracking.
+- The `late_s` and `early_e` penalty variables.
 
-Subject to:
-    Σ x_i ≤ 1                                        ∀t ∈ T : |ACTIVE(t)| > 1
-    i∈ACTIVE(t)
-    
-    x_i ∈ {0,1}                                      ∀i ∈ P
-```
-
-*This is an extremely simplified formulation that only ensures non-overlapping programs while maximizing scores.*
-
----
-
-## Model Comparison
-
-### Complexity Analysis
-
-| Aspect | ILP | RILP |
-|--------|-----|------|
-| **Variables** | O(n² + n·R) | O(n) |
-| **Overlap Constraints** | O(n²) worst case | O(T), where T = time window |
-| **Genre Constraints** | O(n·R + n²·R) | None (removed) |
-| **Channel Switch Penalty** | Included in objective | None (removed) |
-| **Total Constraints** | O(n²·R) | O(T) |
-
-Where:
-- n = number of programs
-- R = max consecutive genre
-- |C| = number of maximal cliques (typically much smaller than n²)
-
-### Variable Counts Example
-
-For n = 500 programs, R = 2, T = 1440 minutes:
-
-**ILP:**
-- Selection: 500
-- Sequencing: ~50,000 (n² worst case)
-- First/Last: 1,000
-- Run positions: 1,000
-- **Total: ~52,500 variables**
-- **Constraints: ~100,000+**
-
-**RILP:**
-- Selection: 500
-- **Total: 500 variables** (100× reduction!)
-- **Constraints: ~1,440** (one per minute with overlaps)
-
----
-
-## Key Mathematical Insights
-
-### 1. Time Discretization (RILP)
-
-Instead of modeling all pairwise overlaps, RILP uses **time discretization**:
-
-- Divides the viewing window into 1-minute intervals
-- For each minute, tracks which programs are active
-- Adds constraint only when multiple programs overlap at that minute
-- Reduces O(n²) pairwise constraints to O(T) time-based constraints
-
-### 2. Genre Constraint Modeling (ILP)
-
-The genre constraint is modeled using **run position tracking**, similar to:
-- State machines / finite automata
-- Dynamic programming state transitions
-- Each program "inherits" position from predecessor or resets
-
-Mathematical property:
-```
-run_{i,k+1} ≥ seq_{j,i} + run_{j,k} - 1
-
-Equivalent to:
-If seq_{j,i} = 1 AND run_{j,k} = 1, then run_{i,k+1} ≥ 1
-```
-
-### 3. Flow Conservation (ILP)
-
-The sequencing constraints form a **network flow** model:
-- Source: "first" node
-- Sink: "last" node  
-- Each program: transshipment node
-- Flow = 1 if selected, 0 otherwise
-
-This ensures the schedule forms a **single chain** (Hamiltonian path on selected programs).
-
----
-
-## Example Calculation
-
-### Small Example
-
-**Programs:**
-- P1: [0, 30], Drama, score=50
-- P2: [30, 60], Drama, score=60
-- P3: [30, 90], Comedy, score=80
-- P4: [60, 90], Drama, score=40
-
-**Parameters:** R=2, S_pen=5
-
-**ILP Solution:**
-
-Variables:
-```
-x = [1, 1, 0, 0]  (select P1, P2)
-seq_{1,2} = 1     (P2 follows P1)
-first_1 = 1
-last_2 = 1
-run_{1,1} = 1     (P1 is 1st Drama)
-run_{2,2} = 1     (P2 is 2nd Drama)
-```
-
-Objective value:
-```
-Z = 50 + 60 - 0 (same channel) = 110
-```
-
-Constraints satisfied:
-- P1 and P3 overlap: x_1 + x_3 = 1 ≤ 1 ✓
-- P2 and P3 overlap: x_2 + x_3 = 1 ≤ 1 ✓
-- Flow from P1: seq_{1,2} + last_1 = 1 = x_1 ✓
-- Flow to P2: seq_{1,2} + first_2 = 1 = x_2 ✓
-- Genre: P2 follows P1 (both Drama), run positions [1,2] ✓
-
----
-
-## Implementation Notes
-
-### Computing bonus_i
-
-```
-bonus_i = Σ pref.bonus
-          pref ∈ TimePreferences
-          where:
-            pref.genre = genre_i AND
-            max(start_i, pref.start) < min(end_i, pref.end) - D
-```
-
-### Building Time Map (RILP)
-
-**Time Discretization Algorithm:**
-
-```
-1. Initialize time_map = {} (maps minute → list of programs)
-2. For each program i:
-     For each minute t in [start_i, end_i):
-       Add i to time_map[t]
-3. For each minute t in time_map:
-     If len(time_map[t]) > 1:
-       Add constraint: Σ x[i] ≤ 1 for i in time_map[t]
-```
-
-Time complexity: O(n · d) where d = average program duration in minutes
-Space complexity: O(T) where T = number of distinct occupied minutes
-
----
-
-## Extensions and Variations
-
-### 1. Soft Genre Constraint
-
-Replace hard limit R with penalty:
-
-```
-Add variable: violation_g ≥ 0 for each genre g
-
-Objective: Z = ... - penalty · Σ violation_g
-                              g
-
-Constraint: consecutive_run_count ≤ R + violation_g
-```
-
-### 2. Minimum Schedule Length
-
-Add constraint:
-```
-Σ (end_i - start_i) · x_i ≥ MinLength
-i∈P
-```
-
-### 3. Required Programs
-
-For must-include programs M ⊆ P:
-```
-x_i = 1    ∀i ∈ M
-```
-
-### 4. Multi-Objective
-
-Lexicographic optimization:
-1. Maximize score (primary)
-2. Minimize switches (secondary)
-3. Maximize coverage (tertiary)
-
-```
-Solve:
-  max score
-  s.t. original constraints
-  
-Then:
-  min switches
-  s.t. score ≥ optimal_score - ε
-```
-
----
-
-## References
-
-### Mathematical Programming
-
-- Wolsey, L. A. (1998). *Integer Programming*. Wiley.
-- Bertsimas, D., & Weismantel, R. (2005). *Optimization over Integers*. Dynamic Ideas.
-
-### Interval Scheduling
-
-- Golumbic, M. C. (2004). *Algorithmic Graph Theory and Perfect Graphs*. Elsevier.
-- Kleinberg, J., & Tardos, É. (2006). *Algorithm Design*. Pearson.
-
-### Network Flows
-
-- Ahuja, R. K., Magnanti, T. L., & Orlin, J. B. (1993). *Network Flows*. Prentice Hall.
+This reduces the problem to a **Weighted Optional Interval Scheduling Problem**, which provides an "Ideal Score" benchmark. Using this "Ideal Score", we can measure exactly how much "viewer happiness" we sacrificed to enforce diversity and reduce channel switching.
