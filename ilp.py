@@ -84,6 +84,8 @@ def solve_with_ortools(input_data, output_file, time_limit=300, num_cores=8, hin
                     'score': prog['score']
                 })
 
+    candidates.sort(key=lambda c: c['w_start'])
+
     n = len(candidates)
     model = cp_model.CpModel()
 
@@ -107,6 +109,32 @@ def solve_with_ortools(input_data, output_file, time_limit=300, num_cores=8, hin
     arc_literals = {}
     switch_vars = []
 
+    # Candidates are sorted by w_start, so nearby indices are temporally close.
+    # Building a full O(n^2) transition graph is intractable for large inputs
+    # (e.g. 100k+ programs), so we only connect each program to its K nearest
+    # temporal successors, plus a "safety net" arc to the first reachable
+    # program on every channel so no channel becomes unreachable later in the
+    # timeline just because it's surrounded by many candidates in between.
+    K_NEIGHBORS = 100
+    segments_by_channel = defaultdict(list)
+    for idx, c in enumerate(candidates):
+        segments_by_channel[c['channel']].append(idx)
+
+    def feasible_transition(i, j):
+        return candidates[i]['w_start'] + candidates[i]['min_d'] <= candidates[j]['w_end'] - candidates[j]['min_d']
+
+    def add_transition(i, j):
+        if (i, j) in arc_literals:
+            return
+        lit = model.NewBoolVar(f'a_{i}_{j}')
+        arcs.append([i, j, lit])
+        arc_literals[(i, j)] = lit
+        model.AddImplication(lit, is_present[i])
+        model.AddImplication(lit, is_present[j])
+        model.Add(ends[i] <= starts[j]).OnlyEnforceIf(lit)
+        if candidates[i]['channel'] != candidates[j]['channel']:
+            switch_vars.append(lit)
+
     for i in range(n):
         lit = model.NewBoolVar(f'st_{i}')
         arcs.append([start_node, i, lit])
@@ -118,26 +146,30 @@ def solve_with_ortools(input_data, output_file, time_limit=300, num_cores=8, hin
         arc_literals[(i, end_node)] = lit
         model.AddImplication(lit, is_present[i])
 
-        for j in range(n):
-            if i == j:
-                lit = model.NewBoolVar(f'self_{i}')
-                arcs.append([i, i, lit])
-                model.Add(is_present[i] == 0).OnlyEnforceIf(lit)
-                model.Add(is_present[i] == 1).OnlyEnforceIf(lit.Not())
+        lit = model.NewBoolVar(f'self_{i}')
+        arcs.append([i, i, lit])
+        model.Add(is_present[i] == 0).OnlyEnforceIf(lit)
+        model.Add(is_present[i] == 1).OnlyEnforceIf(lit.Not())
+
+        # K nearest temporal successors.
+        count = 0
+        for j in range(i + 1, n):
+            if not feasible_transition(i, j):
                 continue
+            add_transition(i, j)
+            count += 1
+            if count >= K_NEIGHBORS:
+                break
 
-            if candidates[i]['w_start'] + candidates[i]['min_d'] > candidates[j]['w_end'] - candidates[j]['min_d']:
-                continue
-
-            lit = model.NewBoolVar(f'a_{i}_{j}')
-            arcs.append([i, j, lit])
-            arc_literals[(i, j)] = lit
-            model.AddImplication(lit, is_present[i])
-            model.AddImplication(lit, is_present[j])
-            model.Add(ends[i] <= starts[j]).OnlyEnforceIf(lit)
-
-            if candidates[i]['channel'] != candidates[j]['channel']:
-                switch_vars.append(lit)
+        # Safety net: first reachable program on every channel.
+        for cid, indices in segments_by_channel.items():
+            for j in indices:
+                if j <= i:
+                    continue
+                if not feasible_transition(i, j):
+                    continue
+                add_transition(i, j)
+                break
 
     arcs.append([end_node, start_node, model.NewConstant(1)])
     model.AddCircuit(arcs)
@@ -146,13 +178,14 @@ def solve_with_ortools(input_data, output_file, time_limit=300, num_cores=8, hin
     for i in range(n):
         if (start_node, i) in arc_literals:
             model.Add(genre_runs[i] == 1).OnlyEnforceIf(arc_literals[(start_node, i)])
-        for j in range(n):
-            if (i, j) in arc_literals:
-                lit = arc_literals[(i, j)]
-                if candidates[i]['genre'] == candidates[j]['genre']:
-                    model.Add(genre_runs[j] == genre_runs[i] + 1).OnlyEnforceIf(lit)
-                else:
-                    model.Add(genre_runs[j] == 1).OnlyEnforceIf(lit)
+
+    for (i, j), lit in arc_literals.items():
+        if i == start_node or j in (start_node, end_node) or i == j:
+            continue
+        if candidates[i]['genre'] == candidates[j]['genre']:
+            model.Add(genre_runs[j] == genre_runs[i] + 1).OnlyEnforceIf(lit)
+        else:
+            model.Add(genre_runs[j] == 1).OnlyEnforceIf(lit)
 
     obj_base = sum(c['score'] * is_present[i] for i, c in enumerate(candidates))
 

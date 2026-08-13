@@ -90,44 +90,12 @@ def solve_with_ortools(input_data, output_file, time_limit=300, num_cores=8, hin
         model.Add(durations[i] == 0).OnlyEnforceIf(is_present[i].Not())
         intervals.append(model.NewOptionalIntervalVar(starts[i], durations[i], ends[i], is_present[i], f'int_{i}'))
 
+    # RILP has no sequencing-dependent terms (no channel-switch penalty, no
+    # genre-run tracking, no trimming penalty), so the objective only depends
+    # on which programs are selected and their timing. NoOverlap alone fully
+    # captures that, making an O(n^2) Circuit/transition graph unnecessary
+    # extra work that doesn't scale to large inputs (10k+ programs).
     model.AddNoOverlap(intervals)
-
-    start_node = n
-    end_node = n + 1
-    arcs = []
-    arc_literals = {}
-
-    for i in range(n):
-        lit = model.NewBoolVar(f'st_{i}')
-        arcs.append([start_node, i, lit])
-        arc_literals[(start_node, i)] = lit
-        model.AddImplication(lit, is_present[i])
-
-        lit = model.NewBoolVar(f'{i}_en')
-        arcs.append([i, end_node, lit])
-        arc_literals[(i, end_node)] = lit
-        model.AddImplication(lit, is_present[i])
-
-        for j in range(n):
-            if i == j:
-                lit = model.NewBoolVar(f'self_{i}')
-                arcs.append([i, i, lit])
-                model.Add(is_present[i] == 0).OnlyEnforceIf(lit)
-                model.Add(is_present[i] == 1).OnlyEnforceIf(lit.Not())
-                continue
-            
-            if candidates[i]['w_start'] + candidates[i]['min_d'] > candidates[j]['w_end'] - candidates[j]['min_d']:
-                continue
-            
-            lit = model.NewBoolVar(f'a_{i}_{j}')
-            arcs.append([i, j, lit])
-            arc_literals[(i, j)] = lit
-            model.AddImplication(lit, is_present[i])
-            model.AddImplication(lit, is_present[j])
-            model.Add(ends[i] <= starts[j]).OnlyEnforceIf(lit)
-
-    arcs.append([end_node, start_node, model.NewConstant(1)])
-    model.AddCircuit(arcs)
 
     obj_base = sum(c['score'] * is_present[i] for i, c in enumerate(candidates))
     
